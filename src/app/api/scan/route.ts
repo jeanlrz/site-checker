@@ -46,6 +46,8 @@ export async function POST(req: NextRequest) {
           // Network error or timeout: proceed anyway, the crawler will handle it
         }
 
+        send({ type: "progress", phase: "Vérification de l'URL...", pagesScanned: 0, totalPages: 0, currentUrl: baseUrl, resolvedUrl: baseUrl });
+
         // Phase 1: Check sitemap and robots.txt first
         send({ type: "progress", phase: "Vérification de sitemap.xml et robots.txt...", pagesScanned: 0, totalPages: 0, currentUrl: baseUrl });
 

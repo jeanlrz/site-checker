@@ -147,6 +147,7 @@ export default function Home() {
             const event: ScanEvent = JSON.parse(line.slice(6));
             if (event.type === "progress") {
               setProgress({ phase: event.phase, pagesScanned: event.pagesScanned, totalPages: event.totalPages, currentUrl: event.currentUrl });
+              if (event.resolvedUrl) setScanUrl(event.resolvedUrl.replace(/^https?:\/\//, "").replace(/\/$/, ""));
             } else if (event.type === "done") {
               setResults(event.categories);
               setScanInfo({ totalPages: event.totalPages, duration: event.duration });

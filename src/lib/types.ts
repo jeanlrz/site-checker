@@ -30,6 +30,7 @@ export interface ScanProgress {
   totalPages: number;
   currentUrl: string;
   phase: string;
+  resolvedUrl?: string;
 }
 
 export interface ScanDone {
