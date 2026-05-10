@@ -665,7 +665,7 @@ function CheckRow({ check, expanded, onToggle }: { check: CheckResult; expanded:
     <div className={`rounded-lg border ${isOk ? "border-green-100 bg-green-50/50" : "border-border bg-white"}`}>
       <button
         onClick={onToggle}
-        disabled={isOk}
+        disabled={isOk && !check.tooltip}
         className="w-full flex items-center gap-3 px-4 py-3 text-left text-sm hover:bg-muted/30 transition-colors disabled:hover:bg-transparent"
       >
         {severityIcon(check.severity)}
