@@ -84,7 +84,16 @@ export default function Home() {
   const [scanUrl, setScanUrl] = useState("");
   const [error, setError] = useState("");
   const [expandedChecks, setExpandedChecks] = useState<Set<string>>(new Set());
+  const [history, setHistory] = useState<string[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
   const abortRef = useRef<AbortController | null>(null);
+
+  useEffect(() => {
+    try {
+      const saved = JSON.parse(localStorage.getItem("scan-history") || "[]");
+      if (Array.isArray(saved)) setHistory(saved);
+    } catch { /* ignore */ }
+  }, []);
 
   const toggleCheck = (id: string) => {
     setExpandedChecks((prev) => {
@@ -151,7 +160,13 @@ export default function Home() {
             } else if (event.type === "done") {
               setResults(event.categories);
               setScanInfo({ totalPages: event.totalPages, duration: event.duration });
-              setScanUrl(event.resolvedUrl.replace(/^https?:\/\//, "").replace(/\/$/, ""));
+              const resolved = event.resolvedUrl.replace(/^https?:\/\//, "").replace(/\/$/, "");
+              setScanUrl(resolved);
+              setHistory(prev => {
+                const updated = [resolved, ...prev.filter(h => h !== resolved)].slice(0, 20);
+                try { localStorage.setItem("scan-history", JSON.stringify(updated)); } catch { /* ignore */ }
+                return updated;
+              });
               setIsScanning(false);
             } else if (event.type === "error") {
               setError(event.message);
@@ -301,14 +316,31 @@ export default function Home() {
             </div>
 
             <div className="w-[85vw] flex flex-col sm:flex-row gap-3">
-              <input
-                type="text"
-                placeholder="https://monsite.comdartisans-production.fr"
-                value={url}
-                onChange={(e) => setUrl(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && handleScan()}
-                className="flex-1 h-12 px-4 rounded-xl border border-border bg-white text-base focus:outline-none focus:ring-2 focus:ring-brand/50 focus:border-brand transition-all"
-              />
+              <div className="relative flex-1">
+                <input
+                  type="text"
+                  placeholder="https://monsite.fr"
+                  value={url}
+                  onChange={(e) => { setUrl(e.target.value); setShowSuggestions(true); }}
+                  onKeyDown={(e) => { if (e.key === "Enter") { setShowSuggestions(false); handleScan(); } if (e.key === "Escape") setShowSuggestions(false); }}
+                  onFocus={() => setShowSuggestions(true)}
+                  onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
+                  className="w-full h-12 px-4 rounded-xl border border-border bg-white text-base focus:outline-none focus:ring-2 focus:ring-brand/50 focus:border-brand transition-all"
+                />
+                {showSuggestions && history.filter(h => h.includes(url.replace(/^https?:\/\//, "").replace(/\/$/, ""))).length > 0 && (
+                  <ul className="absolute z-50 top-full left-0 right-0 mt-1 bg-white border border-border rounded-xl shadow-lg overflow-hidden">
+                    {history.filter(h => h.includes(url.replace(/^https?:\/\//, "").replace(/\/$/, ""))).slice(0, 8).map(h => (
+                      <li
+                        key={h}
+                        onMouseDown={() => { setUrl(h); setShowSuggestions(false); }}
+                        className="px-4 py-2.5 text-sm font-mono cursor-pointer hover:bg-brand/5 hover:text-brand transition-colors"
+                      >
+                        {h}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
               <Button
                 onClick={handleScan}
                 disabled={!url.trim()}
