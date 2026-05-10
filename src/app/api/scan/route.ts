@@ -137,7 +137,7 @@ export async function POST(req: NextRequest) {
             totalPages: total,
             currentUrl,
           });
-        }, 100, sitemapUrls);
+        }, 200, sitemapUrls);
 
         // Abort if no page was successfully reached (site doesn't exist or is fully unreachable)
         if (pages.filter(p => p.status > 0).length === 0) {
