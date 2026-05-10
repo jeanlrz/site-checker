@@ -34,7 +34,7 @@ function checkBrokenLinks(pages: PageData[], baseUrl: string): CategoryResult {
   const empty: CheckItem[] = [];
 
   for (const page of pages) {
-    if (!page.html) continue;
+    if (!page.html || !isHtmlPage(page)) continue;
     const $ = cheerio.load(page.html);
     const seenThisPage = new Set<string>();
 
@@ -164,7 +164,7 @@ function checkSeo(pages: PageData[]): CategoryResult {
         longTitle.push({ page: page.url, detail: `${title.length} caractères: "${title.slice(0, 70)}…"` });
       }
       // Normalize URL: strip .html (with optional /N pagination) and trailing /N
-      const normalizePageUrl = (u: string) => u.replace(/\.html(\/\d+)?$/, "").replace(/\/\d+$/, "");
+      const normalizePageUrl = (u: string) => u.replace(/^(https?:\/\/)www\./, "$1").replace(/\.html(\/\d+)?$/, "").replace(/\/\d+$/, "");
       const normalizedUrl = normalizePageUrl(page.url);
       const existing = titles.get(title) || [];
       if (!existing.some((u) => normalizePageUrl(u) === normalizedUrl)) {

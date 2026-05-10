@@ -46,47 +46,76 @@ export async function POST(req: NextRequest) {
         // Phase 1: Check sitemap and robots.txt first
         send({ type: "progress", phase: "Vérification de sitemap.xml et robots.txt...", pagesScanned: 0, totalPages: 0, currentUrl: baseUrl });
 
-        const extraPages: { url: string; html: string; status: number; headers: Record<string, string>; loadTime: number; size: number }[] = [];
-        for (const path of ["/sitemap.xml", "/robots.txt"]) {
+        const fetchPage = async (url: string) => {
           try {
             const start = Date.now();
-            const res = await fetch(baseUrl + path, {
-              signal: AbortSignal.timeout(10000),
-              headers: { "User-Agent": "SiteChecker/1.0 (Com d'Artisans)" },
-            });
+            const res = await fetch(url, { signal: AbortSignal.timeout(10000), headers: { "User-Agent": "SiteChecker/1.0 (Com d'Artisans)" } });
             const html = await res.text();
             const headers: Record<string, string> = {};
             res.headers.forEach((v, k) => { headers[k] = v; });
-            extraPages.push({
-              url: baseUrl + path,
-              html,
-              status: res.status,
-              headers,
-              loadTime: Date.now() - start,
-              size: new TextEncoder().encode(html).length,
-            });
+            return { url, html, status: res.status, headers, loadTime: Date.now() - start, size: new TextEncoder().encode(html).length };
           } catch {
-            extraPages.push({ url: baseUrl + path, html: "", status: 0, headers: {}, loadTime: 0, size: 0 });
+            return { url, html: "", status: 0, headers: {} as Record<string, string>, loadTime: 0, size: 0 };
+          }
+        };
+
+        const extraPages = await Promise.all(["/sitemap.xml", "/robots.txt"].map(p => fetchPage(baseUrl + p)));
+
+        // Extract page URLs from a sitemap XML string
+        const baseHostname = new URL(baseUrl).hostname.replace(/^www\./, "");
+        const skipPatterns = ["/author/", "/category/", "/tag/", "/feed/", "/wp-json/", "/cdn-cgi/", "?", "#", "/page/"];
+        const paginationRe = /\/\d+\/?$/;
+        const extractPageUrls = (xml: string): string[] => {
+          const urls: string[] = [];
+          const locs = xml.match(/<loc>(.*?)<\/loc>/g) || [];
+          for (const match of locs) {
+            const u = match.replace(/<\/?loc>/g, "").trim();
+            if (!u.startsWith("http")) continue;
+            if (u.endsWith(".xml")) continue; // skip sub-sitemap references
+            try { if (new URL(u).hostname.replace(/^www\./, "") !== baseHostname) continue; } catch { continue; }
+            if (skipPatterns.some(p => u.includes(p))) continue;
+            if (paginationRe.test(u)) continue;
+            urls.push(u);
+          }
+          return urls;
+        };
+
+        const sitemapUrls: string[] = [];
+        const sitemapPage = extraPages.find(p => p.url.includes("sitemap") && p.html);
+        if (sitemapPage?.html) {
+          if (sitemapPage.html.includes("<sitemapindex")) {
+            // Sitemap index: fetch each sub-sitemap (max 5) and extract page URLs
+            const subSitemapLocs = (sitemapPage.html.match(/<loc>(.*?)<\/loc>/g) || [])
+              .map(m => m.replace(/<\/?loc>/g, "").trim())
+              .filter(u => u.endsWith(".xml"))
+              .slice(0, 5);
+            for (const subUrl of subSitemapLocs) {
+              try {
+                const res = await fetch(subUrl, { signal: AbortSignal.timeout(10000), headers: { "User-Agent": "SiteChecker/1.0 (Com d'Artisans)" } });
+                const xml = await res.text();
+                sitemapUrls.push(...extractPageUrls(xml));
+              } catch { /* ignore */ }
+            }
+          } else {
+            sitemapUrls.push(...extractPageUrls(sitemapPage.html));
           }
         }
 
-        // Extract URLs from sitemap.xml
-        const baseHostname = new URL(baseUrl).hostname.replace(/^www\./, "");
-        const sitemapUrls: string[] = [];
-        const sitemapPage = extraPages.find(p => p.url.includes("sitemap"));
-        if (sitemapPage?.html) {
-          const locMatches = sitemapPage.html.match(/<loc>(.*?)<\/loc>/g) || [];
-          const skipPatterns = ["/author/", "/category/", "/tag/", "/feed/", "/wp-json/", "/cdn-cgi/", "?", "#", "/page/"];
-          const paginationRe = /\/\d+\/?$/;
-          for (const match of locMatches) {
-            const u = match.replace(/<\/?loc>/g, "").trim();
-            if (!u.startsWith("http")) continue;
-            try {
-              if (new URL(u).hostname.replace(/^www\./, "") !== baseHostname) continue;
-            } catch { continue; }
-            if (skipPatterns.some(p => u.includes(p))) continue;
-            if (paginationRe.test(u)) continue;
-            sitemapUrls.push(u);
+        // If /sitemap.xml gave nothing, try /sitemap_index.xml directly
+        if (sitemapUrls.length === 0) {
+          const sitemapIndex = await fetchPage(baseUrl + "/sitemap_index.xml");
+          if (sitemapIndex.html?.includes("<sitemapindex")) {
+            const subSitemapLocs = (sitemapIndex.html.match(/<loc>(.*?)<\/loc>/g) || [])
+              .map(m => m.replace(/<\/?loc>/g, "").trim())
+              .filter(u => u.endsWith(".xml"))
+              .slice(0, 5);
+            for (const subUrl of subSitemapLocs) {
+              try {
+                const res = await fetch(subUrl, { signal: AbortSignal.timeout(10000), headers: { "User-Agent": "SiteChecker/1.0 (Com d'Artisans)" } });
+                const xml = await res.text();
+                sitemapUrls.push(...extractPageUrls(xml));
+              } catch { /* ignore */ }
+            }
           }
         }
 
