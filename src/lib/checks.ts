@@ -172,6 +172,9 @@ function checkSeo(pages: PageData[]): CategoryResult {
     if (!page.html || !isHtmlPage(page)) continue;
     const $ = cheerio.load(page.html);
 
+    const robotsMeta = ($('meta[name="robots"]').attr("content") || "").toLowerCase();
+    const isNoIndex = robotsMeta.includes("noindex");
+
     const title = $("title").first().text().trim();
     if (!title) {
       missingTitle.push({ page: page.url, detail: "Balise <title> manquante" });
@@ -179,14 +182,16 @@ function checkSeo(pages: PageData[]): CategoryResult {
       if (title.length > 60) {
         longTitle.push({ page: page.url, detail: `${title.length} caractères: "${title.slice(0, 70)}…"` });
       }
-      // Normalize URL: strip .html (with optional /N pagination) and trailing /N
-      const normalizePageUrl = (u: string) => u.replace(/^http:\/\//, "https://").replace(/^(https:\/\/)www\./, "$1").replace(/\.html(\/\d+)?$/, "").replace(/\/\d+$/, "");
-      const normalizedUrl = normalizePageUrl(page.url);
-      const existing = titles.get(title) || [];
-      if (!existing.some((u) => normalizePageUrl(u) === normalizedUrl)) {
-        existing.push(page.url);
+      // Pages noindex exclues des doublons (non indexées par Google, faux positifs WooCommerce fréquents)
+      if (!isNoIndex) {
+        const normalizePageUrl = (u: string) => u.replace(/^http:\/\//, "https://").replace(/^(https:\/\/)www\./, "$1").replace(/\.html(\/\d+)?$/, "").replace(/\/\d+$/, "");
+        const normalizedUrl = normalizePageUrl(page.url);
+        const existing = titles.get(title) || [];
+        if (!existing.some((u) => normalizePageUrl(u) === normalizedUrl)) {
+          existing.push(page.url);
+        }
+        titles.set(title, existing);
       }
-      titles.set(title, existing);
     }
 
     const desc = $('meta[name="description"]').attr("content")?.trim();
