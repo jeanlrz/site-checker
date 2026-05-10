@@ -207,7 +207,7 @@ function checkSeo(pages: PageData[]): CategoryResult {
   for (const [title, urls] of titles) {
     if (urls.length > 1) {
       for (const url of urls) {
-        duplicateTitles.push({ page: url, detail: `Title dupliqué: "${title.slice(0, 50)}…"` });
+        duplicateTitles.push({ page: url, detail: `Même titre sur plusieurs pages: "${title.slice(0, 50)}…"` });
       }
     }
   }
@@ -217,7 +217,7 @@ function checkSeo(pages: PageData[]): CategoryResult {
     make("missing-desc", "seo", "Pages sans meta description", missingDesc),
     make("missing-h1", "seo", "Pages sans H1", missingH1),
     make("multiple-h1", "seo", "Pages avec plusieurs H1", multipleH1),
-    make("duplicate-titles", "seo", "Titles dupliqués", duplicateTitles),
+    make("duplicate-titles", "seo", "Titre identique sur plusieurs pages", duplicateTitles),
     make("long-title", "seo", "Titles trop longs (>60 car.)", longTitle),
     make("long-desc", "seo", "Meta descriptions trop longues (>156 car.)", longDesc),
   ];

@@ -335,12 +335,22 @@ export default function Home() {
                 {showSuggestions && history.filter(h => h.includes(url.replace(/^https?:\/\//, "").replace(/\/$/, ""))).length > 0 && (
                   <ul className="absolute z-50 top-full left-0 right-0 mt-1 bg-white border border-border rounded-xl shadow-lg overflow-hidden">
                     {history.filter(h => h.includes(url.replace(/^https?:\/\//, "").replace(/\/$/, ""))).slice(0, 8).map(h => (
-                      <li
-                        key={h}
-                        onMouseDown={() => { setUrl(h); setShowSuggestions(false); }}
-                        className="px-4 py-2.5 text-sm font-mono cursor-pointer hover:bg-brand/5 hover:text-brand transition-colors"
-                      >
-                        {h}
+                      <li key={h} className="flex items-center justify-between px-4 py-2.5 hover:bg-brand/5 group">
+                        <span
+                          onMouseDown={() => { setUrl(h); setShowSuggestions(false); }}
+                          className="flex-1 text-sm font-mono cursor-pointer text-foreground group-hover:text-brand transition-colors truncate"
+                        >{h}</span>
+                        <button
+                          onMouseDown={(e) => {
+                            e.preventDefault();
+                            setHistory(prev => {
+                              const updated = prev.filter(x => x !== h);
+                              try { localStorage.setItem("scan-history", JSON.stringify(updated)); } catch { /* ignore */ }
+                              return updated;
+                            });
+                          }}
+                          className="ml-2 text-muted-foreground hover:text-red-500 transition-colors shrink-0"
+                        >✕</button>
                       </li>
                     ))}
                   </ul>
