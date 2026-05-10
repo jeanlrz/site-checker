@@ -54,6 +54,7 @@ export async function crawlSite(
 
       if (res.ok && res.headers.get("content-type")?.includes("text/html")) {
         const $ = cheerio.load(html);
+        const nonHtmlExt = /\.(png|jpe?g|gif|webp|svg|pdf|zip|mp4|mp3|css|js|ico|woff2?|xml|json|txt)(\?.*)?$/i;
         $("a[href]").each((_, el) => {
           const href = $(el).attr("href");
           if (!href) return;
@@ -61,6 +62,7 @@ export async function crawlSite(
             const resolved = new URL(href, url);
             if (resolved.hostname.replace(/^www\./, "") !== baseHostname) return;
             if (resolved.protocol !== "http:" && resolved.protocol !== "https:") return;
+            if (nonHtmlExt.test(resolved.pathname)) return;
             if (resolved.pathname.includes("/elementor-hf/")) return;
             const normalized = normalizeUrl(resolved.href);
             if (!visited.has(visitKey(normalized)) && !toVisit.some(t => visitKey(t) === visitKey(normalized))) {
