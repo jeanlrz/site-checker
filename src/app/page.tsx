@@ -88,7 +88,7 @@ const CHECK_WEIGHTS: Record<string, number> = {
   // Légal — obligatoire en France
   "mentions-legales": 9,
   "politique-confidentialite": 9,
-  "politique-cookies": 8,
+  "politique-cookies": 9,
   // Liens
   "broken-links": 8,
   "empty-links": 5,
@@ -96,7 +96,7 @@ const CHECK_WEIGHTS: Record<string, number> = {
   "broken-images": 7,
   "no-alt": 6,
   "large-images": 4,
-  "not-webp": 3,
+  "not-webp": 6,
   // Technique
   "lorem-ipsum": 9,
   "viewport": 8,
@@ -426,9 +426,6 @@ export default function Home() {
           </div>
           {results && (
             <div className="flex flex-col items-center gap-2 w-full">
-              <Button variant="outline" size="sm" onClick={() => generatePdf(results, scanUrl || url.replace(/^https?:\/\//, "").replace(/\/$/, ""), scanInfo)} className="w-full text-muted-foreground border-border/60">
-                <Download className="w-3 h-3 mr-1" />Exporter PDF
-              </Button>
               <Button variant="outline" size="sm" onClick={() => { setResults(null); setError(""); setExpandedChecks(new Set()); window.location.hash = ""; handleScan(); }} className="w-full text-brand border-brand/30">
                 <RotateCcw className="w-3 h-3 mr-1" />Rescanner
               </Button>
