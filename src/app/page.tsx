@@ -123,6 +123,10 @@ function weightedScore(categories: CategoryResult[]): number {
   return Math.round((okWeight / totalWeight) * 100);
 }
 
+function esc(s: string): string {
+  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+}
+
 function generatePdf(categories: CategoryResult[], siteUrl: string, scanInfo: { totalPages: number; duration: number }) {
   const date = new Date().toLocaleDateString("fr-FR", { day: "2-digit", month: "long", year: "numeric" });
   const severityLabel = (s: string) => s === "success" ? "OK" : s === "warning" ? "Attention" : "Problème";
@@ -136,15 +140,15 @@ function generatePdf(categories: CategoryResult[], siteUrl: string, scanInfo: { 
     }).map(check => {
       const itemsHtml = check.items.slice(0, 30).map(item =>
         `<tr style="border-bottom:1px solid #f0f0f0">
-          <td style="padding:5px 10px;font-family:monospace;font-size:11px;color:#337C5F;width:50%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${item.page.replace(/^https?:\/\//, "")}</td>
-          <td style="padding:5px 10px;font-size:11px;color:#333;width:50%">${item.detail}</td>
+          <td style="padding:5px 10px;font-family:monospace;font-size:11px;color:#337C5F;width:50%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(item.page.replace(/^https?:\/\//, ""))}</td>
+          <td style="padding:5px 10px;font-size:11px;color:#333;width:50%">${esc(item.detail)}</td>
         </tr>`
       ).join("");
       return `
         <div style="margin-bottom:8px;border:1px solid #e5e7eb;border-radius:8px;overflow:hidden">
           <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:${severityBg(check.severity)}">
             <span style="width:10px;height:10px;border-radius:50%;background:${severityColor(check.severity)};flex-shrink:0"></span>
-            <span style="font-weight:600;font-size:13px;flex:1">${check.label}</span>
+            <span style="font-weight:600;font-size:13px;flex:1">${esc(check.label)}</span>
             <span style="font-size:12px;color:${severityColor(check.severity)};font-weight:600">${severityLabel(check.severity)}${check.count > 0 ? ` (${check.count})` : ""}</span>
           </div>
           ${check.items.length > 0 ? `<table style="width:100%;border-collapse:collapse;font-size:11px">${itemsHtml}</table>` : ""}
@@ -154,7 +158,7 @@ function generatePdf(categories: CategoryResult[], siteUrl: string, scanInfo: { 
     const catColor = severityColor(cat.severity);
     return `
       <div style="margin-bottom:28px">
-        <h2 style="font-size:16px;font-weight:700;margin:0 0 12px;padding-bottom:6px;border-bottom:2px solid ${catColor};color:${catColor}">${cat.label}</h2>
+        <h2 style="font-size:16px;font-weight:700;margin:0 0 12px;padding-bottom:6px;border-bottom:2px solid ${catColor};color:${catColor}">${esc(cat.label)}</h2>
         ${checksHtml}
       </div>`;
   }).join("");
