@@ -446,7 +446,7 @@ export default function Home() {
         {!results && !isScanning && (
           <div className="flex flex-col items-center justify-center min-h-[60vh] gap-8">
             <div className="text-center space-y-2">
-              <h1 className="text-3xl font-bold tracking-tight">Vérifiez votre site web en 1 clic</h1>
+              <h1 className="text-3xl font-bold tracking-tight">Analysez votre site web en 1 clic</h1>
               <p className="text-muted-foreground text-lg">Entrez l&apos;URL de votre site pour lancer l&apos;audit complet.</p>
             </div>
 
