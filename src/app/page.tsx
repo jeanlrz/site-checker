@@ -136,9 +136,8 @@ function generatePdf(categories: CategoryResult[], siteUrl: string, scanInfo: { 
     }).map(check => {
       const itemsHtml = check.items.slice(0, 30).map(item =>
         `<tr style="border-bottom:1px solid #f0f0f0">
-          <td style="padding:4px 8px;font-family:monospace;font-size:11px;color:#337C5F;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${item.page.replace(/^https?:\/\//, "")}</td>
-          ${item.element ? `<td style="padding:4px 8px;font-family:monospace;font-size:11px;color:#888">${item.element}</td>` : "<td></td>"}
-          <td style="padding:4px 8px;font-size:11px;color:#333">${item.detail}</td>
+          <td style="padding:5px 10px;font-family:monospace;font-size:11px;color:#337C5F;width:50%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${item.page.replace(/^https?:\/\//, "")}</td>
+          <td style="padding:5px 10px;font-size:11px;color:#333;width:50%">${item.detail}</td>
         </tr>`
       ).join("");
       return `
