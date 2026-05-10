@@ -110,6 +110,7 @@ function checkImages(pages: PageData[]): CategoryResult {
   const largeImages: CheckItem[] = [];
   const brokenImages: CheckItem[] = [];
   const seenNotWebp = new Set<string>();
+  const seenNoAlt = new Set<string>();
 
   for (const page of pages) {
     if (!page.html || !isHtmlPage(page)) continue;
@@ -123,7 +124,11 @@ function checkImages(pages: PageData[]): CategoryResult {
       try { if (src && !src.startsWith("data:")) resourceUrl = new URL(src, page.url).href; } catch { /* ignore */ }
 
       if (alt === undefined || alt.trim() === "") {
-        noAlt.push({ page: page.url, element: `<img src="${srcShort}">`, detail: "Texte alternatif manquant", resourceUrl });
+        const noAltKey = resourceUrl || srcShort;
+        if (!seenNoAlt.has(noAltKey)) {
+          seenNoAlt.add(noAltKey);
+          noAlt.push({ page: page.url, element: `<img src="${srcShort}">`, detail: "Texte alternatif manquant", resourceUrl });
+        }
       }
 
       if (!src || src.startsWith("data:")) return;
