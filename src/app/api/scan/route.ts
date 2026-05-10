@@ -138,6 +138,12 @@ export async function POST(req: NextRequest) {
           });
         }, 100, sitemapUrls);
 
+        // Abort if no page was successfully reached (site doesn't exist or is fully unreachable)
+        if (pages.filter(p => p.status > 0).length === 0) {
+          send({ type: "error", message: "Impossible d'accéder au site. Vérifiez que l'URL est correcte et que le site est en ligne." });
+          return;
+        }
+
         const allPages = [...pages, ...extraPages];
 
         // Phase 3: Run checks

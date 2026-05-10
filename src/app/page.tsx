@@ -86,6 +86,8 @@ export default function Home() {
   const [expandedChecks, setExpandedChecks] = useState<Set<string>>(new Set());
   const [history, setHistory] = useState<string[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
+  const [scannedPages, setScannedPages] = useState<string[]>([]);
+  const [showPages, setShowPages] = useState(false);
   const abortRef = useRef<AbortController | null>(null);
 
   useEffect(() => {
@@ -120,6 +122,8 @@ export default function Home() {
     setResults(null);
     setError("");
     setScanUrl("");
+    setScannedPages([]);
+    setShowPages(false);
     setProgress({ phase: "Démarrage...", pagesScanned: 0, totalPages: 0, currentUrl: "" });
 
     abortRef.current = new AbortController();
@@ -157,6 +161,7 @@ export default function Home() {
             if (event.type === "progress") {
               setProgress({ phase: event.phase, pagesScanned: event.pagesScanned, totalPages: event.totalPages, currentUrl: event.currentUrl });
               if (event.resolvedUrl) setScanUrl(event.resolvedUrl.replace(/^https?:\/\//, "").replace(/\/$/, ""));
+              if (event.currentUrl) setScannedPages(prev => prev.includes(event.currentUrl) ? prev : [...prev, event.currentUrl]);
             } else if (event.type === "done") {
               setResults(event.categories);
               setScanInfo({ totalPages: event.totalPages, duration: event.duration });
@@ -416,11 +421,19 @@ export default function Home() {
                   {scanInfo.totalPages} page{scanInfo.totalPages > 1 ? "s" : ""} analysée{scanInfo.totalPages > 1 ? "s" : ""} en {(scanInfo.duration / 1000).toFixed(1)}s
                 </p>
               </div>
-              <Button variant="outline" size="sm" onClick={() => window.print()}>
-                <Download className="w-3 h-3 mr-1" />
-                Exporter
+              <Button variant="outline" size="sm" onClick={() => setShowPages(v => !v)}>
+                <FileText className="w-3 h-3 mr-1" />
+                {scannedPages.length} page{scannedPages.length > 1 ? "s" : ""} analysée{scannedPages.length > 1 ? "s" : ""}
               </Button>
             </div>
+
+            {showPages && (
+              <div className="mt-3 border-t pt-3 max-h-48 overflow-y-auto">
+                {scannedPages.map((p, i) => (
+                  <a key={i} href={p} target="_blank" rel="noopener noreferrer" className="block text-xs font-mono text-brand hover:underline truncate py-0.5">{p.replace(/^https?:\/\//, "")}</a>
+                ))}
+              </div>
+            )}
 
             {/* Résumé catégories */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
