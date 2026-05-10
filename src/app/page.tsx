@@ -337,8 +337,9 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-background">
       <header className="border-b bg-white sticky top-0 z-50">
-        <div className="w-[85vw] mx-auto px-4 md:px-6 py-4 relative flex items-center justify-center">
-          <div className="flex flex-col sm:flex-row items-center gap-2 sm:gap-3">
+        {/* Desktop : logo centré, boutons absolus à droite */}
+        <div className="hidden sm:flex w-[85vw] mx-auto px-6 py-4 relative items-center justify-center">
+          <div className="flex flex-row items-center gap-3">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src="/logo.png"
@@ -346,82 +347,57 @@ export default function Home() {
               className="h-10 cursor-pointer"
               onClick={() => askConfirm(() => { window.location.hash = ""; window.location.reload(); })}
             />
-            <div className="hidden sm:block w-px h-6 bg-border self-center" />
-            <div className="flex flex-col items-center sm:items-start">
-              <span className="text-sm sm:text-base font-medium text-muted-foreground">Site Checker</span>
+            <div className="w-px h-6 bg-border self-center" />
+            <div className="flex flex-col items-start">
+              <span className="text-base font-medium text-muted-foreground">Site Checker</span>
               {(results || isScanning) && url && (
                 <span className="text-xs text-brand font-mono">{scanUrl || url.replace(/^https?:\/\//, "").replace(/\/$/, "")}</span>
               )}
             </div>
           </div>
           {results && (
-            <div className="hidden sm:flex absolute right-6 items-center gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => generatePdf(results, scanUrl || url.replace(/^https?:\/\//, "").replace(/\/$/, ""), scanInfo)}
-                className="text-muted-foreground border-border/60 hover:bg-muted/50"
-              >
-                <Download className="w-3 h-3 mr-1" />
-                Exporter PDF
+            <div className="absolute right-6 flex items-center gap-2">
+              <Button variant="outline" size="sm" onClick={() => generatePdf(results, scanUrl || url.replace(/^https?:\/\//, "").replace(/\/$/, ""), scanInfo)} className="text-muted-foreground border-border/60 hover:bg-muted/50">
+                <Download className="w-3 h-3 mr-1" />Exporter PDF
               </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  setResults(null);
-                  setError("");
-                  setExpandedChecks(new Set());
-                  window.location.hash = "";
-                  handleScan();
-                }}
-                className="text-brand border-brand/30 hover:bg-brand/5"
-              >
-                <RotateCcw className="w-3 h-3 mr-1" />
-                Rescanner
+              <Button variant="outline" size="sm" onClick={() => { setResults(null); setError(""); setExpandedChecks(new Set()); window.location.hash = ""; handleScan(); }} className="text-brand border-brand/30 hover:bg-brand/5">
+                <RotateCcw className="w-3 h-3 mr-1" />Rescanner
               </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => askConfirm(() => { handleReset(); window.location.hash = ""; })}
-                className="text-muted-foreground"
-              >
+              <Button variant="ghost" size="sm" onClick={() => askConfirm(() => { handleReset(); window.location.hash = ""; })} className="text-muted-foreground">
                 Nouveau scan
               </Button>
             </div>
           )}
         </div>
-        {/* Boutons actions visibles uniquement sur mobile sous le header */}
-        {results && (
-          <div className="sm:hidden border-t px-4 py-2 flex items-center justify-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => generatePdf(results, scanUrl || url.replace(/^https?:\/\//, "").replace(/\/$/, ""), scanInfo)}
-              className="text-muted-foreground border-border/60"
-            >
-              <Download className="w-3 h-3 mr-1" />
-              PDF
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => { setResults(null); setError(""); setExpandedChecks(new Set()); window.location.hash = ""; handleScan(); }}
-              className="text-brand border-brand/30"
-            >
-              <RotateCcw className="w-3 h-3 mr-1" />
-              Rescanner
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => askConfirm(() => { handleReset(); window.location.hash = ""; })}
-              className="text-muted-foreground"
-            >
-              Nouveau scan
-            </Button>
+        {/* Mobile : colonne centrée */}
+        <div className="sm:hidden flex flex-col items-center gap-3 px-4 py-4">
+          <div className="flex flex-col items-center gap-1">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/logo.png"
+              alt="Com d'Artisans"
+              className="h-9 cursor-pointer"
+              onClick={() => askConfirm(() => { window.location.hash = ""; window.location.reload(); })}
+            />
+            <span className="text-sm font-medium text-muted-foreground">Site Checker</span>
+            {(results || isScanning) && url && (
+              <span className="text-xs text-brand font-mono">{scanUrl || url.replace(/^https?:\/\//, "").replace(/\/$/, "")}</span>
+            )}
           </div>
-        )}
+          {results && (
+            <div className="flex flex-col items-center gap-2 w-full">
+              <Button variant="outline" size="sm" onClick={() => generatePdf(results, scanUrl || url.replace(/^https?:\/\//, "").replace(/\/$/, ""), scanInfo)} className="w-full text-muted-foreground border-border/60">
+                <Download className="w-3 h-3 mr-1" />Exporter PDF
+              </Button>
+              <Button variant="outline" size="sm" onClick={() => { setResults(null); setError(""); setExpandedChecks(new Set()); window.location.hash = ""; handleScan(); }} className="w-full text-brand border-brand/30">
+                <RotateCcw className="w-3 h-3 mr-1" />Rescanner
+              </Button>
+              <Button variant="ghost" size="sm" onClick={() => askConfirm(() => { handleReset(); window.location.hash = ""; })} className="w-full text-muted-foreground">
+                Nouveau scan
+              </Button>
+            </div>
+          )}
+        </div>
       </header>
 
       <main className="w-full max-w-[95vw] md:max-w-[85vw] mx-auto px-4 md:px-6 py-8">
