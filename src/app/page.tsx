@@ -550,6 +550,15 @@ export default function Home() {
               </div>
               <div className="flex-1 text-center sm:text-left">
                 <p className="text-sm font-semibold text-brand mb-1">{scanUrl || url.replace(/^https?:\/\//, "").replace(/\/$/, "")}</p>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => generatePdf(results, scanUrl || url.replace(/^https?:\/\//, "").replace(/\/$/, ""), scanInfo)}
+                  className="sm:hidden mb-2 text-muted-foreground border-border/60"
+                >
+                  <Download className="w-3 h-3 mr-1" />
+                  Exporter PDF
+                </Button>
                 <h2 className="text-xl font-bold">
                   {globalScore >= 80 ? "Bon travail !" : globalScore >= 50 ? "Des points à corriger" : "Attention, plusieurs problèmes"}
                 </h2>
@@ -562,16 +571,6 @@ export default function Home() {
                 {scanInfo.totalPages} page{scanInfo.totalPages > 1 ? "s" : ""} analysée{scanInfo.totalPages > 1 ? "s" : ""}
               </Button>
             </div>
-
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => generatePdf(results, scanUrl || url.replace(/^https?:\/\//, "").replace(/\/$/, ""), scanInfo)}
-              className="sm:hidden w-full text-muted-foreground border-border/60"
-            >
-              <Download className="w-3 h-3 mr-1" />
-              Exporter PDF
-            </Button>
 
             {showPages && (
               <div className="mt-3 border-t pt-3 max-h-48 overflow-y-auto">
@@ -674,15 +673,10 @@ function CheckRow({ check, expanded, onToggle }: { check: CheckResult; expanded:
           {check.label}
           {check.tooltip && (
             <span
-              className="relative inline-flex"
+              className="inline-flex"
               onClick={(e) => { e.stopPropagation(); setShowTooltip(v => !v); }}
             >
               <Info className="w-3.5 h-3.5 text-muted-foreground hover:text-brand transition-colors cursor-pointer shrink-0" />
-              {showTooltip && (
-                <span className="absolute left-1/2 -translate-x-1/2 top-6 z-50 w-64 max-w-[calc(100vw-2rem)] text-xs text-foreground bg-white border border-border rounded-lg shadow-lg p-3 font-normal leading-relaxed">
-                  {check.tooltip}
-                </span>
-              )}
             </span>
           )}
         </span>
@@ -699,6 +693,12 @@ function CheckRow({ check, expanded, onToggle }: { check: CheckResult; expanded:
           <ChevronRight className="w-4 h-4 text-muted-foreground" />
         )}
       </button>
+
+      {showTooltip && check.tooltip && (
+        <div className="px-4 pb-3 pt-1 text-xs text-muted-foreground leading-relaxed border-t border-border/40 bg-muted/20">
+          {check.tooltip}
+        </div>
+      )}
 
       {expanded && !isOk && check.items.length > 0 && (
         <div className="border-t px-4 py-3 space-y-2 bg-muted/20">
