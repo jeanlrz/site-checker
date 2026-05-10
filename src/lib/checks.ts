@@ -150,7 +150,7 @@ function checkImages(pages: PageData[]): CategoryResult {
 function isHtmlPage(page: PageData): boolean {
   const url = page.url;
   if (url.endsWith(".xml") || url.endsWith(".txt") || url.endsWith(".json")) return false;
-  if (url.includes("/cdn-cgi/") || url.includes("/wp-json/") || url.includes("/feed/")) return false;
+  if (url.includes("/cdn-cgi/") || url.includes("/wp-json/") || url.includes("/feed/") || url.includes("/elementor-hf/")) return false;
   const ct = page.headers["content-type"] || "";
   if (ct && !ct.includes("text/html")) return false;
   return true;

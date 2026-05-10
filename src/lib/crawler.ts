@@ -58,6 +58,7 @@ export async function crawlSite(
             const resolved = new URL(href, url);
             if (resolved.hostname.replace(/^www\./, "") !== baseHostname) return;
             if (resolved.protocol !== "http:" && resolved.protocol !== "https:") return;
+            if (resolved.pathname.includes("/elementor-hf/")) return;
             const normalized = normalizeUrl(resolved.href);
             if (!visited.has(visitKey(normalized)) && !toVisit.some(t => visitKey(t) === visitKey(normalized))) {
               toVisit.push(normalized);
