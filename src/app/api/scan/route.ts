@@ -69,7 +69,7 @@ export async function POST(req: NextRequest) {
 
         // Extract page URLs from a sitemap XML string
         const baseHostname = new URL(baseUrl).hostname.replace(/^www\./, "");
-        const skipPatterns = ["/author/", "/category/", "/tag/", "/feed/", "/wp-json/", "/cdn-cgi/", "?", "#", "/page/"];
+        const skipPatterns = ["/author/", "/category/", "/tag/", "/feed/", "/wp-json/", "/cdn-cgi/", "/elementor-hf/", "/elementskit-content/", "?", "#", "/page/"];
         const paginationRe = /\/\d+\/?$/;
         const extractPageUrls = (xml: string): string[] => {
           const urls: string[] = [];

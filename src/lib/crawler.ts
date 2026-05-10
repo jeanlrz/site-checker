@@ -24,7 +24,7 @@ export async function crawlSite(
   }
   const pages: PageData[] = [];
 
-  const skipUrlPatterns = ["/elementor-hf/", "/wp-json/", "/feed/", "/cdn-cgi/"];
+  const skipUrlPatterns = ["/elementor-hf/", "/elementskit-content/", "/wp-json/", "/feed/", "/cdn-cgi/"];
 
   while (toVisit.length > 0 && pages.length < maxPages) {
     const url = toVisit.shift()!;
@@ -96,6 +96,7 @@ function visitKey(url: string): string {
     u.search = "";
     let path = u.pathname;
     if (path.endsWith("/") && path !== "/") path = path.slice(0, -1);
+    if (path.endsWith(".html")) path = path.slice(0, -5);
     u.pathname = path;
     return u.href;
   } catch { return url; }
