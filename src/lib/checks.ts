@@ -192,7 +192,7 @@ function checkSeo(pages: PageData[]): CategoryResult {
     const desc = $('meta[name="description"]').attr("content")?.trim();
     if (!desc) {
       missingDesc.push({ page: page.url, detail: "Meta description manquante" });
-    } else if (desc.length > 160) {
+    } else if (desc.length > 156) {
       longDesc.push({ page: page.url, detail: `${desc.length} caractères` });
     }
 
@@ -219,7 +219,7 @@ function checkSeo(pages: PageData[]): CategoryResult {
     make("multiple-h1", "seo", "Pages avec plusieurs H1", multipleH1),
     make("duplicate-titles", "seo", "Titles dupliqués", duplicateTitles),
     make("long-title", "seo", "Titles trop longs (>60 car.)", longTitle),
-    make("long-desc", "seo", "Meta descriptions trop longues (>160 car.)", longDesc),
+    make("long-desc", "seo", "Meta descriptions trop longues (>156 car.)", longDesc),
   ];
 
   return { id: "seo", label: "SEO", icon: "Search", severity: worstSeverity(checks), checks };
