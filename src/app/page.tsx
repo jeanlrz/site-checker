@@ -169,7 +169,7 @@ function buildPdfHtml(categories: CategoryResult[], siteUrl: string, scanInfo: {
     body{font-family:system-ui,sans-serif;color:#111;background:#fff;padding:32px 24px;font-size:13px;line-height:1.5}
     .report-header{display:flex;flex-direction:row;gap:16px;justify-content:space-between;align-items:center;margin-bottom:28px;padding-bottom:20px;border-bottom:2px solid #e5e7eb}
     .report-header-info{min-width:0;flex:1}
-    .score-box{text-align:center;background:#f8f8f8;border-radius:12px;padding:18px 28px;flex-shrink:0;min-width:120px}
+    .score-box{text-align:center;border-radius:16px;padding:20px 32px;flex-shrink:0;min-width:130px}
     .cat{margin-bottom:24px}
     .cat-title{font-size:15px;font-weight:700;margin:0 0 10px;padding-bottom:5px;border-bottom-width:2px;border-bottom-style:solid}
     .check{margin-bottom:7px;border:1px solid #e5e7eb;border-radius:7px;overflow:hidden}
@@ -200,7 +200,7 @@ function buildPdfHtml(categories: CategoryResult[], siteUrl: string, scanInfo: {
     "<div class=’report-header-info’><p style=’font-size:11px;color:#888;margin-bottom:3px’>Audit réalisé par Com d’Artisans</p>" +
     "<p style=’font-size:20px;font-weight:800;color:#337C5F’>" + esc(siteUrl) + "</p>" +
     "<p style=’font-size:11px;color:#888;margin-top:3px’>" + scanInfo.totalPages + " page" + (scanInfo.totalPages > 1 ? "s" : "") + " analysée" + (scanInfo.totalPages > 1 ? "s" : "") + " · " + date + "</p></div>" +
-    "<div class=’score-box’><p style=’font-size:52px;font-weight:900;color:" + scoreColor + ";line-height:1’>" + score + "</p><p style=’font-size:11px;color:#888;margin-top:4px;font-weight:600’>Score global</p></div>" +
+    "<div class=’score-box’ style=’background:" + scoreColor + "’><p style=’font-size:64px;font-weight:900;color:#fff;line-height:1’>" + score + "</p><p style=’font-size:11px;color:rgba(255,255,255,0.8);margin-top:6px;font-weight:600;text-transform:uppercase;letter-spacing:0.05em’>Score global</p></div>" +
     "</div>" +
     categoriesHtml +
     "</body></html>";
@@ -479,6 +479,9 @@ export default function Home() {
                   type="text"
                   placeholder="https://monsite.fr"
                   value={url}
+                  autoCapitalize="none"
+                  autoCorrect="off"
+                  spellCheck={false}
                   onChange={(e) => { setUrl(e.target.value); setShowSuggestions(true); }}
                   onKeyDown={(e) => { if (e.key === "Enter") { setShowSuggestions(false); handleScan(); } if (e.key === "Escape") setShowSuggestions(false); }}
                   onFocus={() => setShowSuggestions(true)}
@@ -556,7 +559,7 @@ export default function Home() {
                 {progress.pagesScanned} page{progress.pagesScanned > 1 ? "s" : ""} scannée{progress.pagesScanned > 1 ? "s" : ""}
               </p>
               {progress.currentUrl && (
-                <p className="text-xs text-muted-foreground font-mono truncate max-w-md">
+                <p className="text-xs text-muted-foreground font-mono truncate w-full max-w-[90vw] px-4">
                   {progress.currentUrl}
                 </p>
               )}
@@ -621,7 +624,7 @@ export default function Home() {
                   href={`#cat-${cat.id}`}
                   className={`flex items-center gap-2 p-3 rounded-xl border transition-all hover:shadow-md ${severityColor(cat.severity)}`}
                 >
-                  {severityIcon(cat.severity)}
+                  <span className="shrink-0">{severityIcon(cat.severity)}</span>
                   <div>
                     <p className="text-sm font-semibold">{cat.label}</p>
                     <p className="text-xs opacity-75">
