@@ -127,7 +127,7 @@ function esc(s: string): string {
   return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 }
 
-function generatePdf(categories: CategoryResult[], siteUrl: string, scanInfo: { totalPages: number; duration: number }) {
+function buildPdfHtml(categories: CategoryResult[], siteUrl: string, scanInfo: { totalPages: number; duration: number }): string {
   const date = new Date().toLocaleDateString("fr-FR", { day: "2-digit", month: "long", year: "numeric" });
   const severityLabel = (s: string) => s === "success" ? "OK" : s === "warning" ? "Attention" : "Problème";
   const severityColor = (s: string) => s === "success" ? "#16a34a" : s === "warning" ? "#d97706" : "#dc2626";
@@ -139,62 +139,43 @@ function generatePdf(categories: CategoryResult[], siteUrl: string, scanInfo: { 
       return (o[a.severity] ?? 2) - (o[b.severity] ?? 2);
     }).map(check => {
       const itemsHtml = check.items.slice(0, 30).map(item =>
-        `<tr style="border-bottom:1px solid #f0f0f0">
-          <td style="padding:5px 10px;font-family:monospace;font-size:11px;color:#337C5F;width:50%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(item.page.replace(/^https?:\/\//, ""))}</td>
-          <td style="padding:5px 10px;font-size:11px;color:#333;width:50%">${esc(item.detail)}</td>
-        </tr>`
+        "<tr style='border-bottom:1px solid #f0f0f0'>" +
+        "<td style='padding:5px 10px;font-family:monospace;font-size:11px;color:#337C5F;width:50%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap'>" + esc(item.page.replace(/^https?:\/\//, "")) + "</td>" +
+        "<td style='padding:5px 10px;font-size:11px;color:#333;width:50%'>" + esc(item.detail) + "</td>" +
+        "</tr>"
       ).join("");
-      return `
-        <div style="margin-bottom:8px;border:1px solid #e5e7eb;border-radius:8px;overflow:hidden">
-          <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:${severityBg(check.severity)}">
-            <span style="width:10px;height:10px;border-radius:50%;background:${severityColor(check.severity)};flex-shrink:0"></span>
-            <span style="font-weight:600;font-size:13px;flex:1">${esc(check.label)}</span>
-            <span style="font-size:12px;color:${severityColor(check.severity)};font-weight:600">${severityLabel(check.severity)}${check.count > 0 ? ` (${check.count})` : ""}</span>
-          </div>
-          ${check.items.length > 0 ? `<table style="width:100%;border-collapse:collapse;font-size:11px">${itemsHtml}</table>` : ""}
-          ${check.items.length > 30 ? `<p style="padding:4px 14px;font-size:11px;color:#888">… et ${check.items.length - 30} autres</p>` : ""}
-        </div>`;
+      return "<div style='margin-bottom:8px;border:1px solid #e5e7eb;border-radius:8px;overflow:hidden'>" +
+        "<div style='display:flex;align-items:center;gap:10px;padding:10px 14px;background:" + severityBg(check.severity) + "'>" +
+        "<span style='width:10px;height:10px;border-radius:50%;background:" + severityColor(check.severity) + ";flex-shrink:0'></span>" +
+        "<span style='font-weight:600;font-size:13px;flex:1'>" + esc(check.label) + "</span>" +
+        "<span style='font-size:12px;color:" + severityColor(check.severity) + ";font-weight:600'>" + severityLabel(check.severity) + (check.count > 0 ? " (" + check.count + ")" : "") + "</span>" +
+        "</div>" +
+        (check.items.length > 0 ? "<table style='width:100%;border-collapse:collapse;font-size:11px'>" + itemsHtml + "</table>" : "") +
+        (check.items.length > 30 ? "<p style='padding:4px 14px;font-size:11px;color:#888'>… et " + (check.items.length - 30) + " autres</p>" : "") +
+        "</div>";
     }).join("");
     const catColor = severityColor(cat.severity);
-    return `
-      <div style="margin-bottom:28px">
-        <h2 style="font-size:16px;font-weight:700;margin:0 0 12px;padding-bottom:6px;border-bottom:2px solid ${catColor};color:${catColor}">${esc(cat.label)}</h2>
-        ${checksHtml}
-      </div>`;
+    return "<div style='margin-bottom:28px'>" +
+      "<h2 style='font-size:16px;font-weight:700;margin:0 0 12px;padding-bottom:6px;border-bottom:2px solid " + catColor + ";color:" + catColor + "'>" + esc(cat.label) + "</h2>" +
+      checksHtml +
+      "</div>";
   }).join("");
 
   const score = weightedScore(categories);
   const scoreColor = score >= 80 ? "#16a34a" : score >= 50 ? "#d97706" : "#dc2626";
 
-  const html = `<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><title>Audit — ${siteUrl}</title>
-  <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: system-ui, sans-serif; color: #111; background: #fff; padding: 40px; font-size: 14px; }
-    @media print {
-      body { padding: 20px; }
-      .no-print { display: none !important; }
-    }
-  </style></head><body>
-  <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:32px;padding-bottom:24px;border-bottom:2px solid #e5e7eb">
-    <div>
-      <p style="font-size:12px;color:#888;margin-bottom:4px">Audit réalisé par Com d'Artisans</p>
-      <h1 style="font-size:22px;font-weight:800;color:#337C5F">${siteUrl}</h1>
-      <p style="font-size:12px;color:#888;margin-top:4px">${scanInfo.totalPages} page${scanInfo.totalPages > 1 ? "s" : ""} analysée${scanInfo.totalPages > 1 ? "s" : ""} · ${date}</p>
-    </div>
-    <div style="text-align:center;background:#f8f8f8;border-radius:12px;padding:16px 24px">
-      <p style="font-size:36px;font-weight:900;color:${scoreColor};line-height:1">${score}</p>
-      <p style="font-size:11px;color:#888;margin-top:4px">Score global</p>
-    </div>
-  </div>
-  <div class="no-print" style="margin-bottom:24px">
-    <button onclick="window.print()" style="background:#337C5F;color:#fff;border:none;padding:10px 20px;border-radius:8px;font-size:14px;cursor:pointer;font-weight:600">Imprimer / Enregistrer en PDF</button>
-  </div>
-  ${categoriesHtml}
-  </body></html>`;
-
-  const blob = new Blob([html], { type: "text/html;charset=utf-8" });
-  const blobUrl = URL.createObjectURL(blob);
-  window.open(blobUrl, "_blank");
+  return "<!DOCTYPE html><html lang='fr'><head><meta charset='UTF-8'>" +
+    "<style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:system-ui,sans-serif;color:#111;background:#fff;padding:40px;font-size:14px}@media print{body{padding:20px}.no-print{display:none!important}}</style>" +
+    "</head><body>" +
+    "<div style='display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:32px;padding-bottom:24px;border-bottom:2px solid #e5e7eb'>" +
+    "<div><p style='font-size:12px;color:#888;margin-bottom:4px'>Audit réalisé par Com d’Artisans</p>" +
+    "<p style='font-size:22px;font-weight:800;color:#337C5F'>" + esc(siteUrl) + "</p>" +
+    "<p style='font-size:12px;color:#888;margin-top:4px'>" + scanInfo.totalPages + " page" + (scanInfo.totalPages > 1 ? "s" : "") + " analysée" + (scanInfo.totalPages > 1 ? "s" : "") + " · " + date + "</p></div>" +
+    "<div style='text-align:center;background:#f8f8f8;border-radius:12px;padding:16px 24px'>" +
+    "<p style='font-size:36px;font-weight:900;color:" + scoreColor + ";line-height:1'>" + score + "</p>" +
+    "<p style='font-size:11px;color:#888;margin-top:4px'>Score global</p></div></div>" +
+    categoriesHtml +
+    "</body></html>";
 }
 
 export default function Home() {
@@ -210,7 +191,16 @@ export default function Home() {
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [scannedPages, setScannedPages] = useState<string[]>([]);
   const [showPages, setShowPages] = useState(false);
+  const [showPdf, setShowPdf] = useState(false);
+  const [pdfHtml, setPdfHtml] = useState("");
+  const iframeRef = useRef<HTMLIFrameElement>(null);
   const abortRef = useRef<AbortController | null>(null);
+
+  useEffect(() => {
+    if (showPdf && iframeRef.current && pdfHtml) {
+      iframeRef.current.srcdoc = pdfHtml;
+    }
+  }, [showPdf, pdfHtml]);
 
   useEffect(() => {
     try {
@@ -401,7 +391,7 @@ export default function Home() {
           </div>
           {results && (
             <div className="absolute right-6 flex items-center gap-2">
-              <Button variant="outline" size="sm" onClick={() => generatePdf(results, scanUrl || url.replace(/^https?:\/\//, "").replace(/\/$/, ""), scanInfo)} className="text-muted-foreground border-border/60 hover:bg-muted/50">
+              <Button variant="outline" size="sm" onClick={() => { setPdfHtml(buildPdfHtml(results, scanUrl || url.replace(/^https?:\/\//, "").replace(/\/$/, ""), scanInfo)); setShowPdf(true); }} className="text-muted-foreground border-border/60 hover:bg-muted/50">
                 <Download className="w-3 h-3 mr-1" />Exporter PDF
               </Button>
               <Button variant="outline" size="sm" onClick={() => { setResults(null); setError(""); setExpandedChecks(new Set()); window.location.hash = ""; handleScan(); }} className="text-brand border-brand/30 hover:bg-brand/5">
@@ -557,7 +547,7 @@ export default function Home() {
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => generatePdf(results, scanUrl || url.replace(/^https?:\/\//, "").replace(/\/$/, ""), scanInfo)}
+                  onClick={() => { setPdfHtml(buildPdfHtml(results, scanUrl || url.replace(/^https?:\/\//, "").replace(/\/$/, ""), scanInfo)); setShowPdf(true); }}
                   className="sm:hidden mb-2 text-muted-foreground border-border/60"
                 >
                   <Download className="w-3 h-3 mr-1" />
@@ -646,6 +636,23 @@ export default function Home() {
               </Button>
             </div>
           </div>
+        </div>
+      )}
+
+      {showPdf && (
+        <div className="fixed inset-0 z-[100] flex flex-col bg-white">
+          <div className="flex items-center justify-between px-4 py-2 border-b bg-white shrink-0 gap-2">
+            <span className="text-sm font-medium truncate">{scanUrl || url.replace(/^https?:\/\//, "").replace(/\/$/, "")} — Rapport</span>
+            <div className="flex gap-2 shrink-0">
+              <Button size="sm" onClick={() => iframeRef.current?.contentWindow?.print()} className="bg-brand hover:bg-brand-dark text-white">
+                <Download className="w-3 h-3 mr-1" />Imprimer / PDF
+              </Button>
+              <Button variant="outline" size="sm" onClick={() => setShowPdf(false)}>
+                Fermer
+              </Button>
+            </div>
+          </div>
+          <iframe ref={iframeRef} className="flex-1 w-full border-0" title="Rapport PDF" />
         </div>
       )}
 
