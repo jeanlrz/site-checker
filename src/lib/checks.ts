@@ -61,7 +61,9 @@ function checkBrokenLinks(pages: PageData[], baseUrl: string): CategoryResult {
       if (!href || href === "#" || href.startsWith("javascript:") || href.startsWith("mailto:") || href.startsWith("tel:")) {
         if (href === "#" && $(el).closest("nav, [role='navigation'], [class*='cmplz'], [id*='cmplz'], [class*='cookie'], [id*='cookie'], .cart-contents, .wc-block-mini-cart, [class*='mini-cart'], .wpml-ls, [class*='wpml-ls'], .pll-parent-menu-item").length === 0) {
           if (text.includes("{") || text.includes("}")) return;
-          if (/cart/i.test($(el).attr("class") || "")) return;
+          const elClass = $(el).attr("class") || "";
+          if (/cart|add_to_cart|wc-|woocommerce/i.test(elClass)) return;
+          if (/ajouter au panier|add to cart|au panier/i.test(text)) return;
           if (!seenThisPage.has(text)) {
             seenThisPage.add(text);
             empty.push({ page: page.url, element: `<a>${text || "(vide)"}</a>`, detail: `Bouton sans lien (href="#")` });
