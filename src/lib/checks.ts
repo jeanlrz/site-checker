@@ -2,14 +2,29 @@ import * as cheerio from "cheerio";
 import type { PageData, CategoryResult, CheckResult, CheckItem, Severity } from "./types";
 
 export async function runAllChecks(pages: PageData[], baseUrl: string): Promise<CategoryResult[]> {
-  const categories: CategoryResult[] = [];
+  // Deduplicate pages — handles www/non-www duplicates ending up in the same array
+  const seenUrls = new Set<string>();
+  const deduped = pages.filter(page => {
+    try {
+      const u = new URL(page.url);
+      u.hostname = u.hostname.replace(/^www\./, "");
+      u.hash = "";
+      u.search = "";
+      if (u.pathname.endsWith("/") && u.pathname !== "/") u.pathname = u.pathname.slice(0, -1);
+      const key = u.href;
+      if (seenUrls.has(key)) return false;
+      seenUrls.add(key);
+      return true;
+    } catch { return true; }
+  });
 
-  categories.push(checkBrokenLinks(pages, baseUrl));
-  categories.push(checkImages(pages));
-  categories.push(checkSeo(pages));
-  categories.push(checkTechnical(pages, baseUrl));
-  categories.push(checkPerformance(pages));
-  categories.push(checkRequiredPages(pages, baseUrl));
+  const categories: CategoryResult[] = [];
+  categories.push(checkBrokenLinks(deduped, baseUrl));
+  categories.push(checkImages(deduped));
+  categories.push(checkSeo(deduped));
+  categories.push(checkTechnical(deduped, baseUrl));
+  categories.push(checkPerformance(deduped));
+  categories.push(checkRequiredPages(deduped, baseUrl));
 
   return categories;
 }
@@ -253,15 +268,15 @@ function checkTechnical(pages: PageData[], baseUrl: string): CategoryResult {
   }
   checks.push(make("mixed-content", "technical", "Contenu mixte HTTP/HTTPS", mixed));
 
-  // Sitemap
-  const sitemapPage = pages.find((p) => p.url.includes("sitemap"));
+  // Sitemap — accepts sitemap.xml, sitemap_index.xml, or any sitemap variant
+  const sitemapPage = pages.find((p) => p.url.includes("sitemap") && p.status === 200 && p.html);
   checks.push({
     id: "sitemap",
     category: "technical",
     label: "Sitemap.xml",
-    severity: sitemapPage && sitemapPage.status === 200 ? "success" : "warning",
-    count: sitemapPage && sitemapPage.status === 200 ? 0 : 1,
-    items: sitemapPage && sitemapPage.status === 200 ? [] : [{ page: baseUrl + "/sitemap.xml", detail: "Sitemap non trouvé ou inaccessible" }],
+    severity: sitemapPage ? "success" : "warning",
+    count: sitemapPage ? 0 : 1,
+    items: sitemapPage ? [] : [{ page: baseUrl + "/sitemap.xml", detail: "Sitemap non trouvé ou inaccessible" }],
   });
 
   // robots.txt

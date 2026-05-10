@@ -103,7 +103,8 @@ export async function POST(req: NextRequest) {
         // If /sitemap.xml gave nothing, try /sitemap_index.xml directly
         if (sitemapUrls.length === 0) {
           const sitemapIndex = await fetchPage(baseUrl + "/sitemap_index.xml");
-          if (sitemapIndex.html?.includes("<sitemapindex")) {
+          if (sitemapIndex.status === 200 && sitemapIndex.html?.includes("<sitemapindex")) {
+            extraPages.push(sitemapIndex); // add to extraPages so the technical check finds it
             const subSitemapLocs = (sitemapIndex.html.match(/<loc>(.*?)<\/loc>/g) || [])
               .map(m => m.replace(/<\/?loc>/g, "").trim())
               .filter(u => u.endsWith(".xml"))
