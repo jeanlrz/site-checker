@@ -200,6 +200,8 @@ export default function Home() {
     if (showPdf && iframeRef.current && pdfHtml) {
       iframeRef.current.srcdoc = pdfHtml;
     }
+    document.body.style.overflow = showPdf ? "hidden" : "";
+    return () => { document.body.style.overflow = ""; };
   }, [showPdf, pdfHtml]);
 
   useEffect(() => {
