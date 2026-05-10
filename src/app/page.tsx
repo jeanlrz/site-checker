@@ -419,7 +419,7 @@ export default function Home() {
             <div className="flex flex-col items-start">
               <span className="text-base font-medium text-muted-foreground">Site Checker</span>
               {(results || isScanning) && url && (
-                <span className="text-xs text-brand font-mono">{scanUrl || url.replace(/^https?:\/\//, "").replace(/\/$/, "")}</span>
+                <a href={`https://${scanUrl || url.replace(/^https?:\/\//, "").replace(/\/$/, "")}`} target="_blank" rel="noopener noreferrer" className="text-xs text-brand font-mono hover:underline">{scanUrl || url.replace(/^https?:\/\//, "").replace(/\/$/, "")}</a>
               )}
             </div>
           </div>
@@ -449,7 +449,7 @@ export default function Home() {
             />
             <span className="text-sm font-medium text-muted-foreground">Site Checker</span>
             {(results || isScanning) && url && (
-              <span className="text-xs text-brand font-mono">{scanUrl || url.replace(/^https?:\/\//, "").replace(/\/$/, "")}</span>
+              <a href={`https://${scanUrl || url.replace(/^https?:\/\//, "").replace(/\/$/, "")}`} target="_blank" rel="noopener noreferrer" className="text-xs text-brand font-mono hover:underline">{scanUrl || url.replace(/^https?:\/\//, "").replace(/\/$/, "")}</a>
             )}
           </div>
           {results && (
@@ -577,13 +577,13 @@ export default function Home() {
                 <span className={`text-3xl font-bold ${scoreColor}`}>{globalScore}</span>
               </div>
               <div className="flex-1 text-center sm:text-left min-w-0">
-                <div className="flex items-center justify-center sm:justify-start gap-2 mb-1">
+                <a href={`https://${scanUrl || url.replace(/^https?:\/\//, "").replace(/\/$/, "")}`} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center sm:justify-start gap-2 mb-1 group w-fit">
                   {siteLogoUrl && (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img src={siteLogoUrl} alt="Logo" className="h-7 w-auto max-w-[120px] object-contain" onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
                   )}
-                  <p className="text-sm font-semibold text-brand truncate">{scanUrl || url.replace(/^https?:\/\//, "").replace(/\/$/, "")}</p>
-                </div>
+                  <p className="text-sm font-semibold text-brand truncate group-hover:underline">{scanUrl || url.replace(/^https?:\/\//, "").replace(/\/$/, "")}</p>
+                </a>
                 <Button
                   variant="outline"
                   size="sm"
