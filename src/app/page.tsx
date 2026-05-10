@@ -167,9 +167,9 @@ function buildPdfHtml(categories: CategoryResult[], siteUrl: string, scanInfo: {
   const css = `
     *{box-sizing:border-box;margin:0;padding:0}
     body{font-family:system-ui,sans-serif;color:#111;background:#fff;padding:32px 24px;font-size:13px;line-height:1.5}
-    .report-header{display:flex;flex-direction:row;gap:16px;justify-content:space-between;align-items:center;margin-bottom:28px;padding-bottom:20px;border-bottom:2px solid #e5e7eb}
-    .report-header-info{min-width:0;flex:1}
-    .score-box{text-align:center;border-radius:16px;padding:20px 32px;flex-shrink:0;min-width:130px}
+    .report-header{display:table;width:100%;margin-bottom:28px;padding-bottom:20px;border-bottom:2px solid #e5e7eb}
+    .report-header-info{display:table-cell;vertical-align:middle}
+    .score-box{display:table-cell;vertical-align:middle;text-align:center;border-radius:16px;padding:20px 28px;width:150px;white-space:nowrap}
     .cat{margin-bottom:24px}
     .cat-title{font-size:15px;font-weight:700;margin:0 0 10px;padding-bottom:5px;border-bottom-width:2px;border-bottom-style:solid}
     .check{margin-bottom:7px;border:1px solid #e5e7eb;border-radius:7px;overflow:hidden}
