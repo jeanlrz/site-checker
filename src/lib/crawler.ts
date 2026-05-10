@@ -86,6 +86,7 @@ export async function crawlSite(
 function visitKey(url: string): string {
   try {
     const u = new URL(url);
+    u.protocol = "https:";
     u.hostname = u.hostname.replace(/^www\./, "");
     u.hash = "";
     u.search = "";

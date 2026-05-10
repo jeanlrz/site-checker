@@ -7,6 +7,7 @@ export async function runAllChecks(pages: PageData[], baseUrl: string): Promise<
   const deduped = pages.filter(page => {
     try {
       const u = new URL(page.url);
+      u.protocol = "https:";
       u.hostname = u.hostname.replace(/^www\./, "");
       u.hash = "";
       u.search = "";
@@ -179,7 +180,7 @@ function checkSeo(pages: PageData[]): CategoryResult {
         longTitle.push({ page: page.url, detail: `${title.length} caractères: "${title.slice(0, 70)}…"` });
       }
       // Normalize URL: strip .html (with optional /N pagination) and trailing /N
-      const normalizePageUrl = (u: string) => u.replace(/^(https?:\/\/)www\./, "$1").replace(/\.html(\/\d+)?$/, "").replace(/\/\d+$/, "");
+      const normalizePageUrl = (u: string) => u.replace(/^http:\/\//, "https://").replace(/^(https:\/\/)www\./, "$1").replace(/\.html(\/\d+)?$/, "").replace(/\/\d+$/, "");
       const normalizedUrl = normalizePageUrl(page.url);
       const existing = titles.get(title) || [];
       if (!existing.some((u) => normalizePageUrl(u) === normalizedUrl)) {
