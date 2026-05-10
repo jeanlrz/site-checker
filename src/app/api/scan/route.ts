@@ -145,7 +145,7 @@ export async function POST(req: NextRequest) {
 
         const duration = Date.now() - startTime;
 
-        send({ type: "done", categories, totalPages: pages.length, duration });
+        send({ type: "done", categories, totalPages: pages.length, duration, resolvedUrl: baseUrl });
       } catch (err) {
         send({ type: "error", message: err instanceof Error ? err.message : "Erreur inconnue" });
       } finally {

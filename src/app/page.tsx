@@ -81,6 +81,7 @@ export default function Home() {
   const [progress, setProgress] = useState({ phase: "", pagesScanned: 0, totalPages: 0, currentUrl: "" });
   const [results, setResults] = useState<CategoryResult[] | null>(null);
   const [scanInfo, setScanInfo] = useState({ totalPages: 0, duration: 0 });
+  const [scanUrl, setScanUrl] = useState("");
   const [error, setError] = useState("");
   const [expandedChecks, setExpandedChecks] = useState<Set<string>>(new Set());
   const abortRef = useRef<AbortController | null>(null);
@@ -148,6 +149,7 @@ export default function Home() {
             } else if (event.type === "done") {
               setResults(event.categories);
               setScanInfo({ totalPages: event.totalPages, duration: event.duration });
+              setScanUrl(event.resolvedUrl.replace(/^https?:\/\//, "").replace(/\/$/, ""));
               setIsScanning(false);
             } else if (event.type === "error") {
               setError(event.message);
@@ -253,7 +255,7 @@ export default function Home() {
             <div className="flex flex-col items-center sm:items-start">
               <span className="text-sm sm:text-base font-medium text-muted-foreground">Site Checker</span>
               {(results || isScanning) && url && (
-                <span className="text-xs text-brand font-mono">{url.replace(/^https?:\/\//, "").replace(/\/$/, "")}</span>
+                <span className="text-xs text-brand font-mono">{scanUrl || url.replace(/^https?:\/\//, "").replace(/\/$/, "")}</span>
               )}
             </div>
           </div>
@@ -292,8 +294,8 @@ export default function Home() {
         {!results && !isScanning && (
           <div className="flex flex-col items-center justify-center min-h-[60vh] gap-8">
             <div className="text-center space-y-2">
-              <h1 className="text-3xl font-bold tracking-tight">Vérifiez votre site avant livraison</h1>
-              <p className="text-muted-foreground text-lg">Entrez l&apos;URL de la préprod pour lancer l&apos;audit complet.</p>
+              <h1 className="text-3xl font-bold tracking-tight">Vérifiez votre site web en 1 clic</h1>
+              <p className="text-muted-foreground text-lg">Entrez l&apos;URL de votre site pour lancer l&apos;audit complet.</p>
             </div>
 
             <div className="w-[85vw] flex flex-col sm:flex-row gap-3">
@@ -372,7 +374,7 @@ export default function Home() {
                 <span className={`text-3xl font-bold ${scoreColor}`}>{globalScore}</span>
               </div>
               <div className="flex-1 text-center sm:text-left">
-                <p className="text-sm font-semibold text-brand mb-1">{url.replace(/^https?:\/\//, "").replace(/\/$/, "")}</p>
+                <p className="text-sm font-semibold text-brand mb-1">{scanUrl || url.replace(/^https?:\/\//, "").replace(/\/$/, "")}</p>
                 <h2 className="text-xl font-bold">
                   {globalScore >= 80 ? "Bon travail !" : globalScore >= 50 ? "Des points à corriger" : "Attention, plusieurs problèmes"}
                 </h2>

@@ -37,6 +37,7 @@ export interface ScanDone {
   categories: CategoryResult[];
   totalPages: number;
   duration: number;
+  resolvedUrl: string;
 }
 
 export interface ScanError {
