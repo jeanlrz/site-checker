@@ -579,7 +579,7 @@ export default function Home() {
                 <span className={`text-3xl font-bold ${scoreColor}`}>{globalScore}</span>
               </div>
               <div className="flex-1 text-center sm:text-left min-w-0">
-                <a href={`https://${scanUrl || url.replace(/^https?:\/\//, "").replace(/\/$/, "")}`} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center sm:justify-start gap-2 mb-1 group w-fit">
+                <a href={`https://${scanUrl || url.replace(/^https?:\/\//, "").replace(/\/$/, "")}`} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center sm:justify-start gap-2 mb-1 group w-fit mx-auto sm:mx-0">
                   {siteLogoUrl && (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img src={siteLogoUrl} alt="Logo" className="h-7 w-auto max-w-[120px] object-contain" onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
