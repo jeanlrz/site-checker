@@ -24,8 +24,11 @@ export async function crawlSite(
   }
   const pages: PageData[] = [];
 
+  const skipUrlPatterns = ["/elementor-hf/", "/wp-json/", "/feed/", "/cdn-cgi/"];
+
   while (toVisit.length > 0 && pages.length < maxPages) {
     const url = toVisit.shift()!;
+    if (skipUrlPatterns.some(p => url.includes(p))) continue;
     const visitedKey = visitKey(url);
     if (visited.has(visitedKey)) continue;
     visited.add(visitedKey);
