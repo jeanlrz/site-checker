@@ -574,7 +574,7 @@ export default function Home() {
 
             {showPages && (
               <div className="mt-3 border-t pt-3 max-h-48 overflow-y-auto">
-                {scannedPages.map((p, i) => (
+                {[...scannedPages].sort((a, b) => a.localeCompare(b)).map((p, i) => (
                   <a key={i} href={p} target="_blank" rel="noopener noreferrer" className="block text-xs font-mono text-brand hover:underline truncate py-0.5">{p.replace(/^https?:\/\//, "")}</a>
                 ))}
               </div>
@@ -702,7 +702,7 @@ function CheckRow({ check, expanded, onToggle }: { check: CheckResult; expanded:
 
       {expanded && !isOk && check.items.length > 0 && (
         <div className="border-t px-4 py-3 space-y-2 bg-muted/20">
-          {(showAll ? check.items : check.items.slice(0, 20)).map((item, i) => (
+          {(showAll ? [...check.items].sort((a, b) => a.page.localeCompare(b.page)) : [...check.items].sort((a, b) => a.page.localeCompare(b.page)).slice(0, 20)).map((item, i) => (
             <div key={i} className="flex flex-col sm:flex-row sm:items-start gap-1 text-xs py-1 border-b border-border/40 last:border-0">
               <a
                 href={item.page}
