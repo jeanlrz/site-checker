@@ -167,7 +167,7 @@ function buildPdfHtml(categories: CategoryResult[], siteUrl: string, scanInfo: {
   const css = `
     *{box-sizing:border-box;margin:0;padding:0}
     body{font-family:system-ui,sans-serif;color:#111;background:#fff;padding:32px 24px;font-size:13px;line-height:1.5}
-    .report-header{display:flex;flex-wrap:wrap;gap:16px;justify-content:space-between;align-items:flex-start;margin-bottom:28px;padding-bottom:20px;border-bottom:2px solid #e5e7eb}
+    .report-header{display:flex;flex-direction:row;gap:16px;justify-content:space-between;align-items:center;margin-bottom:28px;padding-bottom:20px;border-bottom:2px solid #e5e7eb}
     .report-header-info{min-width:0;flex:1}
     .score-box{text-align:center;background:#f8f8f8;border-radius:12px;padding:14px 20px;flex-shrink:0}
     .cat{margin-bottom:24px}
@@ -198,7 +198,7 @@ function buildPdfHtml(categories: CategoryResult[], siteUrl: string, scanInfo: {
   return "<!DOCTYPE html><html lang=’fr’><head><meta charset=’UTF-8’><meta name=’viewport’ content=’width=device-width,initial-scale=1’><style>" + css + "</style></head><body>" +
     "<div class=’report-header’>" +
     "<div class=’report-header-info’><p style=’font-size:11px;color:#888;margin-bottom:3px’>Audit réalisé par Com d’Artisans</p>" +
-    (logoUrl ? "<img src=’" + esc(logoUrl) + "’ alt=’Logo’ style=’height:36px;width:auto;max-width:160px;object-fit:contain;display:block;margin-bottom:6px’ onerror=\"this.style.display=’none’\">" : "") +
+    (logoUrl ? "<img src=’" + esc(logoUrl) + "’ alt=’’ style=’height:36px;width:auto;max-width:160px;object-fit:contain;display:block;margin-bottom:6px’ onerror=’this.remove()’>" : "") +
     "<p style=’font-size:20px;font-weight:800;color:#337C5F’>" + esc(siteUrl) + "</p>" +
     "<p style=’font-size:11px;color:#888;margin-top:3px’>" + scanInfo.totalPages + " page" + (scanInfo.totalPages > 1 ? "s" : "") + " analysée" + (scanInfo.totalPages > 1 ? "s" : "") + " · " + date + "</p></div>" +
     "<div class=’score-box’><p style=’font-size:32px;font-weight:900;color:" + scoreColor + ";line-height:1’>" + score + "</p><p style=’font-size:10px;color:#888;margin-top:3px’>Score global</p></div>" +
