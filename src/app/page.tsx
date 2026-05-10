@@ -328,11 +328,11 @@ export default function Home() {
             <div className="w-[85vw] grid grid-cols-3 gap-3 text-sm text-muted-foreground mt-4">
               {[
                 { icon: <Link className="w-5 h-5" />, label: "Liens cassés", desc: "Détecte les liens internes qui pointent vers des pages inexistantes (404) ou des boutons sans lien." },
-                { icon: <Image className="w-5 h-5" />, label: "Images & alts", desc: "Vérifie que toutes les images ont un texte alternatif pour l'accessibilité et le SEO, et détecte les images non converties en WebP." },
-                { icon: <Search className="w-5 h-5" />, label: "SEO", desc: "Contrôle les balises title, meta description et H1 — détecte les absences, doublons et textes trop longs." },
-                { icon: <Settings className="w-5 h-5" />, label: "Technique", desc: "Vérifie le favicon, sitemap.xml, responsive, HTTPS, Lorem ipsum et Google Analytics." },
+                { icon: <Image className="w-5 h-5" />, label: "Images & alts", desc: "Vérifie que toutes les images ont un texte alternatif, détecte les images cassées, trop lourdes et non converties en WebP." },
+                { icon: <Search className="w-5 h-5" />, label: "SEO", desc: "Contrôle les balises title, meta description et H1 — détecte les absences, doublons et textes trop longs (seuils Yoast)." },
+                { icon: <Settings className="w-5 h-5" />, label: "Technique", desc: "Vérifie le favicon, sitemap.xml, robots.txt, responsive, HTTPS, Lorem ipsum et Google Analytics." },
                 { icon: <Zap className="w-5 h-5" />, label: "Performance", desc: "Détecte les pages trop lourdes ou trop lentes au chargement." },
-                { icon: <FileText className="w-5 h-5" />, label: "Pages", desc: "Vérifie la présence des pages obligatoires : mentions légales, confidentialité, cookies, plan de site." },
+                { icon: <FileText className="w-5 h-5" />, label: "Pages", desc: "Vérifie la présence des pages obligatoires : mentions légales, politique de confidentialité et politique de cookies." },
               ].map((item) => (
                 <div key={item.label} className="flex items-start gap-3 p-4 rounded-xl bg-white border border-border">
                   <div className="text-brand mt-0.5 shrink-0">{item.icon}</div>
