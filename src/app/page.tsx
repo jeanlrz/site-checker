@@ -189,8 +189,9 @@ function generatePdf(categories: CategoryResult[], siteUrl: string, scanInfo: { 
   ${categoriesHtml}
   </body></html>`;
 
-  const win = window.open("", "_blank");
-  if (win) { win.document.write(html); win.document.close(); }
+  const blob = new Blob([html], { type: "text/html;charset=utf-8" });
+  const blobUrl = URL.createObjectURL(blob);
+  window.open(blobUrl, "_blank");
 }
 
 export default function Home() {
