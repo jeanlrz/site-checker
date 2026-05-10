@@ -144,19 +144,19 @@ function buildPdfHtml(categories: CategoryResult[], siteUrl: string, scanInfo: {
         "<td style='padding:5px 10px;font-size:11px;color:#333;width:50%'>" + esc(item.detail) + "</td>" +
         "</tr>"
       ).join("");
-      return "<div style='margin-bottom:8px;border:1px solid #e5e7eb;border-radius:8px;overflow:hidden'>" +
-        "<div style='display:flex;align-items:center;gap:10px;padding:10px 14px;background:" + severityBg(check.severity) + "'>" +
-        "<span style='width:10px;height:10px;border-radius:50%;background:" + severityColor(check.severity) + ";flex-shrink:0'></span>" +
-        "<span style='font-weight:600;font-size:13px;flex:1'>" + esc(check.label) + "</span>" +
-        "<span style='font-size:12px;color:" + severityColor(check.severity) + ";font-weight:600'>" + severityLabel(check.severity) + (check.count > 0 ? " (" + check.count + ")" : "") + "</span>" +
+      return "<div class='check'>" +
+        "<div class='check-head' style='background:" + severityBg(check.severity) + "'>" +
+        "<span class='dot' style='background:" + severityColor(check.severity) + "'></span>" +
+        "<span class='check-label'>" + esc(check.label) + "</span>" +
+        "<span class='check-status' style='color:" + severityColor(check.severity) + "'>" + severityLabel(check.severity) + (check.count > 0 ? " (" + check.count + ")" : "") + "</span>" +
         "</div>" +
-        (check.items.length > 0 ? "<table style='width:100%;border-collapse:collapse;font-size:11px'>" + itemsHtml + "</table>" : "") +
-        (check.items.length > 30 ? "<p style='padding:4px 14px;font-size:11px;color:#888'>… et " + (check.items.length - 30) + " autres</p>" : "") +
+        (check.items.length > 0 ? "<table>" + itemsHtml + "</table>" : "") +
+        (check.items.length > 30 ? "<p class='more'>… et " + (check.items.length - 30) + " autres</p>" : "") +
         "</div>";
     }).join("");
     const catColor = severityColor(cat.severity);
-    return "<div style='margin-bottom:28px'>" +
-      "<h2 style='font-size:16px;font-weight:700;margin:0 0 12px;padding-bottom:6px;border-bottom:2px solid " + catColor + ";color:" + catColor + "'>" + esc(cat.label) + "</h2>" +
+    return "<div class='cat'>" +
+      "<h2 class='cat-title' style='border-color:" + catColor + ";color:" + catColor + "'>" + esc(cat.label) + "</h2>" +
       checksHtml +
       "</div>";
   }).join("");
@@ -164,16 +164,44 @@ function buildPdfHtml(categories: CategoryResult[], siteUrl: string, scanInfo: {
   const score = weightedScore(categories);
   const scoreColor = score >= 80 ? "#16a34a" : score >= 50 ? "#d97706" : "#dc2626";
 
-  return "<!DOCTYPE html><html lang='fr'><head><meta charset='UTF-8'>" +
-    "<style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:system-ui,sans-serif;color:#111;background:#fff;padding:40px;font-size:14px}@media print{body{padding:20px}.no-print{display:none!important}}</style>" +
-    "</head><body>" +
-    "<div style='display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:32px;padding-bottom:24px;border-bottom:2px solid #e5e7eb'>" +
-    "<div><p style='font-size:12px;color:#888;margin-bottom:4px'>Audit réalisé par Com d’Artisans</p>" +
-    "<p style='font-size:22px;font-weight:800;color:#337C5F'>" + esc(siteUrl) + "</p>" +
-    "<p style='font-size:12px;color:#888;margin-top:4px'>" + scanInfo.totalPages + " page" + (scanInfo.totalPages > 1 ? "s" : "") + " analysée" + (scanInfo.totalPages > 1 ? "s" : "") + " · " + date + "</p></div>" +
-    "<div style='text-align:center;background:#f8f8f8;border-radius:12px;padding:16px 24px'>" +
-    "<p style='font-size:36px;font-weight:900;color:" + scoreColor + ";line-height:1'>" + score + "</p>" +
-    "<p style='font-size:11px;color:#888;margin-top:4px'>Score global</p></div></div>" +
+  const css = `
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:system-ui,sans-serif;color:#111;background:#fff;padding:32px 24px;font-size:13px;line-height:1.5}
+    .report-header{display:flex;flex-wrap:wrap;gap:16px;justify-content:space-between;align-items:flex-start;margin-bottom:28px;padding-bottom:20px;border-bottom:2px solid #e5e7eb}
+    .report-header-info{min-width:0;flex:1}
+    .score-box{text-align:center;background:#f8f8f8;border-radius:12px;padding:14px 20px;flex-shrink:0}
+    .cat{margin-bottom:24px}
+    .cat-title{font-size:15px;font-weight:700;margin:0 0 10px;padding-bottom:5px;border-bottom-width:2px;border-bottom-style:solid}
+    .check{margin-bottom:7px;border:1px solid #e5e7eb;border-radius:7px;overflow:hidden}
+    .check-head{display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:9px 12px}
+    .dot{width:9px;height:9px;border-radius:50%;flex-shrink:0}
+    .check-label{font-weight:600;font-size:12px;flex:1;min-width:0}
+    .check-status{font-size:11px;font-weight:600;white-space:nowrap}
+    table{width:100%;border-collapse:collapse;font-size:11px}
+    td{padding:4px 10px;border-bottom:1px solid #f0f0f0;word-break:break-word}
+    td:first-child{color:#337C5F;font-family:monospace;width:45%;max-width:280px}
+    td:last-child{color:#333;width:55%}
+    .more{padding:4px 12px;font-size:11px;color:#888}
+    @media (max-width:480px){
+      body{padding:16px 12px;font-size:12px}
+      .score-box{width:100%}
+      td:first-child{width:40%}
+      td:last-child{width:60%}
+    }
+    @media print{
+      body{padding:16px 12px}
+      .no-print{display:none!important}
+      .check{break-inside:avoid}
+    }
+  `;
+
+  return "<!DOCTYPE html><html lang=’fr’><head><meta charset=’UTF-8’><meta name=’viewport’ content=’width=device-width,initial-scale=1’><style>" + css + "</style></head><body>" +
+    "<div class=’report-header’>" +
+    "<div class=’report-header-info’><p style=’font-size:11px;color:#888;margin-bottom:3px’>Audit réalisé par Com d’Artisans</p>" +
+    "<p style=’font-size:20px;font-weight:800;color:#337C5F’>" + esc(siteUrl) + "</p>" +
+    "<p style=’font-size:11px;color:#888;margin-top:3px’>" + scanInfo.totalPages + " page" + (scanInfo.totalPages > 1 ? "s" : "") + " analysée" + (scanInfo.totalPages > 1 ? "s" : "") + " · " + date + "</p></div>" +
+    "<div class=’score-box’><p style=’font-size:32px;font-weight:900;color:" + scoreColor + ";line-height:1’>" + score + "</p><p style=’font-size:10px;color:#888;margin-top:3px’>Score global</p></div>" +
+    "</div>" +
     categoriesHtml +
     "</body></html>";
 }
