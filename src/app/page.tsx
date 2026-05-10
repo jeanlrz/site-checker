@@ -632,7 +632,7 @@ function CheckRow({ check, expanded, onToggle }: { check: CheckResult; expanded:
             >
               <Info className="w-3.5 h-3.5 text-muted-foreground hover:text-brand transition-colors cursor-pointer shrink-0" />
               {showTooltip && (
-                <span className="absolute left-5 top-0 z-50 w-64 text-xs text-foreground bg-white border border-border rounded-lg shadow-lg p-3 font-normal leading-relaxed">
+                <span className="absolute left-1/2 -translate-x-1/2 top-6 z-50 w-64 max-w-[calc(100vw-2rem)] text-xs text-foreground bg-white border border-border rounded-lg shadow-lg p-3 font-normal leading-relaxed">
                   {check.tooltip}
                 </span>
               )}
