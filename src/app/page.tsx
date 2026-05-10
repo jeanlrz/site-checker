@@ -153,7 +153,7 @@ function generatePdf(categories: CategoryResult[], siteUrl: string, scanInfo: { 
     }).join("");
     const catColor = severityColor(cat.severity);
     return `
-      <div style="margin-bottom:28px;page-break-inside:avoid">
+      <div style="margin-bottom:28px">
         <h2 style="font-size:16px;font-weight:700;margin:0 0 12px;padding-bottom:6px;border-bottom:2px solid ${catColor};color:${catColor}">${cat.label}</h2>
         ${checksHtml}
       </div>`;
