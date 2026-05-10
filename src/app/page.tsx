@@ -564,6 +564,16 @@ export default function Home() {
               </Button>
             </div>
 
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => generatePdf(results, scanUrl || url.replace(/^https?:\/\//, "").replace(/\/$/, ""), scanInfo)}
+              className="sm:hidden w-full text-muted-foreground border-border/60"
+            >
+              <Download className="w-3 h-3 mr-1" />
+              Exporter PDF
+            </Button>
+
             {showPages && (
               <div className="mt-3 border-t pt-3 max-h-48 overflow-y-auto">
                 {scannedPages.map((p, i) => (
