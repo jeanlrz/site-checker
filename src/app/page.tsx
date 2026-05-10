@@ -191,7 +191,6 @@ function buildPdfHtml(categories: CategoryResult[], siteUrl: string, scanInfo: {
     @media print{
       body{padding:16px 12px}
       .no-print{display:none!important}
-      .check{break-inside:avoid}
     }
   `;
 
