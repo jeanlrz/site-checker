@@ -27,7 +27,7 @@ export async function POST(req: NextRequest) {
       try {
         const startTime = Date.now();
 
-        // Phase 0: Check site is reachable
+        // Phase 0: Check site is reachable (only block on 5xx — network errors may be Cloudflare/WAF blocking Vercel IPs)
         send({ type: "progress", phase: "Vérification de l'URL...", pagesScanned: 0, totalPages: 0, currentUrl: baseUrl });
         try {
           const checkRes = await fetch(baseUrl, {
@@ -39,8 +39,7 @@ export async function POST(req: NextRequest) {
             return;
           }
         } catch {
-          send({ type: "error", message: "Impossible d'accéder au site. Vérifiez que l'URL est correcte et que le site est en ligne." });
-          return;
+          // Network error or timeout: proceed anyway, the crawler will handle it
         }
 
         // Phase 1: Check sitemap and robots.txt first

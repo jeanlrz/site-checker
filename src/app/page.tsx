@@ -298,7 +298,7 @@ export default function Home() {
 
             <div className="w-[85vw] flex flex-col sm:flex-row gap-3">
               <input
-                type="url"
+                type="text"
                 placeholder="https://monsite.comdartisans-production.fr"
                 value={url}
                 onChange={(e) => setUrl(e.target.value)}
