@@ -127,7 +127,7 @@ function esc(s: string): string {
   return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 }
 
-function buildPdfHtml(categories: CategoryResult[], siteUrl: string, scanInfo: { totalPages: number; duration: number }, logoUrl?: string): string {
+function buildPdfHtml(categories: CategoryResult[], siteUrl: string, scanInfo: { totalPages: number; duration: number }): string {
   const date = new Date().toLocaleDateString("fr-FR", { day: "2-digit", month: "long", year: "numeric" });
   const severityLabel = (s: string) => s === "success" ? "OK" : s === "warning" ? "Attention" : "Problème";
   const severityColor = (s: string) => s === "success" ? "#16a34a" : s === "warning" ? "#d97706" : "#dc2626";
@@ -169,7 +169,7 @@ function buildPdfHtml(categories: CategoryResult[], siteUrl: string, scanInfo: {
     body{font-family:system-ui,sans-serif;color:#111;background:#fff;padding:32px 24px;font-size:13px;line-height:1.5}
     .report-header{display:flex;flex-direction:row;gap:16px;justify-content:space-between;align-items:center;margin-bottom:28px;padding-bottom:20px;border-bottom:2px solid #e5e7eb}
     .report-header-info{min-width:0;flex:1}
-    .score-box{text-align:center;background:#f8f8f8;border-radius:12px;padding:14px 20px;flex-shrink:0}
+    .score-box{text-align:center;background:#f8f8f8;border-radius:12px;padding:18px 28px;flex-shrink:0;min-width:120px}
     .cat{margin-bottom:24px}
     .cat-title{font-size:15px;font-weight:700;margin:0 0 10px;padding-bottom:5px;border-bottom-width:2px;border-bottom-style:solid}
     .check{margin-bottom:7px;border:1px solid #e5e7eb;border-radius:7px;overflow:hidden}
@@ -198,10 +198,9 @@ function buildPdfHtml(categories: CategoryResult[], siteUrl: string, scanInfo: {
   return "<!DOCTYPE html><html lang=’fr’><head><meta charset=’UTF-8’><meta name=’viewport’ content=’width=device-width,initial-scale=1’><style>" + css + "</style></head><body>" +
     "<div class=’report-header’>" +
     "<div class=’report-header-info’><p style=’font-size:11px;color:#888;margin-bottom:3px’>Audit réalisé par Com d’Artisans</p>" +
-    (logoUrl ? "<img src=’" + esc(logoUrl) + "’ alt=’’ style=’height:36px;width:auto;max-width:160px;object-fit:contain;display:block;margin-bottom:6px’ onerror=’this.remove()’>" : "") +
     "<p style=’font-size:20px;font-weight:800;color:#337C5F’>" + esc(siteUrl) + "</p>" +
     "<p style=’font-size:11px;color:#888;margin-top:3px’>" + scanInfo.totalPages + " page" + (scanInfo.totalPages > 1 ? "s" : "") + " analysée" + (scanInfo.totalPages > 1 ? "s" : "") + " · " + date + "</p></div>" +
-    "<div class=’score-box’><p style=’font-size:32px;font-weight:900;color:" + scoreColor + ";line-height:1’>" + score + "</p><p style=’font-size:10px;color:#888;margin-top:3px’>Score global</p></div>" +
+    "<div class=’score-box’><p style=’font-size:52px;font-weight:900;color:" + scoreColor + ";line-height:1’>" + score + "</p><p style=’font-size:11px;color:#888;margin-top:4px;font-weight:600’>Score global</p></div>" +
     "</div>" +
     categoriesHtml +
     "</body></html>";
@@ -425,7 +424,7 @@ export default function Home() {
           </div>
           {results && (
             <div className="absolute right-6 flex items-center gap-2">
-              <Button variant="outline" size="sm" onClick={() => { setPdfHtml(buildPdfHtml(results, scanUrl || url.replace(/^https?:\/\//, "").replace(/\/$/, ""), scanInfo, siteLogoUrl || undefined)); setShowPdf(true); }} className="text-muted-foreground border-border/60 hover:bg-muted/50">
+              <Button variant="outline" size="sm" onClick={() => { setPdfHtml(buildPdfHtml(results, scanUrl || url.replace(/^https?:\/\//, "").replace(/\/$/, ""), scanInfo)); setShowPdf(true); }} className="text-muted-foreground border-border/60 hover:bg-muted/50">
                 <Download className="w-3 h-3 mr-1" />Exporter PDF
               </Button>
               <Button variant="outline" size="sm" onClick={() => { setResults(null); setError(""); setExpandedChecks(new Set()); window.location.hash = ""; handleScan(); }} className="text-brand border-brand/30 hover:bg-brand/5">
@@ -587,7 +586,7 @@ export default function Home() {
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => { setPdfHtml(buildPdfHtml(results, scanUrl || url.replace(/^https?:\/\//, "").replace(/\/$/, ""), scanInfo, siteLogoUrl || undefined)); setShowPdf(true); }}
+                  onClick={() => { setPdfHtml(buildPdfHtml(results, scanUrl || url.replace(/^https?:\/\//, "").replace(/\/$/, ""), scanInfo)); setShowPdf(true); }}
                   className="sm:hidden mb-2 text-muted-foreground border-border/60"
                 >
                   <Download className="w-3 h-3 mr-1" />
@@ -608,7 +607,7 @@ export default function Home() {
 
             {showPages && (
               <div className="mt-3 border-t pt-3 max-h-48 overflow-y-auto">
-                {[...scannedPages].sort((a, b) => a.localeCompare(b)).map((p, i) => (
+                {[...scannedPages].filter(p => !/\.(png|jpe?g|gif|webp|svg|pdf|zip|mp4|mp3|css|js|ico|woff2?)(\?.*)?$/i.test(p)).sort((a, b) => a.localeCompare(b)).map((p, i) => (
                   <a key={i} href={p} target="_blank" rel="noopener noreferrer" className="block text-xs font-mono text-brand hover:underline truncate py-0.5">{p.replace(/^https?:\/\//, "")}</a>
                 ))}
               </div>
