@@ -76,6 +76,53 @@ function severityLabel(s: Severity) {
   }
 }
 
+const CHECK_WEIGHTS: Record<string, number> = {
+  // SEO — le plus impactant pour un site vitrine
+  "missing-title": 10,
+  "missing-desc": 8,
+  "missing-h1": 7,
+  "duplicate-titles": 7,
+  "multiple-h1": 5,
+  "long-title": 4,
+  "long-desc": 3,
+  // Légal — obligatoire en France
+  "mentions-legales": 9,
+  "politique-confidentialite": 9,
+  "politique-cookies": 8,
+  // Liens
+  "broken-links": 8,
+  "empty-links": 5,
+  // Images
+  "broken-images": 7,
+  "no-alt": 6,
+  "large-images": 4,
+  "not-webp": 3,
+  // Technique
+  "lorem-ipsum": 9,
+  "viewport": 8,
+  "no-analytics": 6,
+  "sitemap": 6,
+  "favicon": 5,
+  "robots": 5,
+  // Performance
+  "slow-pages": 6,
+  "heavy-pages": 5,
+};
+
+function weightedScore(categories: CategoryResult[]): number {
+  let totalWeight = 0;
+  let okWeight = 0;
+  for (const cat of categories) {
+    for (const check of cat.checks) {
+      const w = CHECK_WEIGHTS[check.id] ?? 5;
+      totalWeight += w;
+      if (check.severity === "success") okWeight += w;
+    }
+  }
+  if (totalWeight === 0) return 0;
+  return Math.round((okWeight / totalWeight) * 100);
+}
+
 function generatePdf(categories: CategoryResult[], siteUrl: string, scanInfo: { totalPages: number; duration: number }) {
   const date = new Date().toLocaleDateString("fr-FR", { day: "2-digit", month: "long", year: "numeric" });
   const severityLabel = (s: string) => s === "success" ? "OK" : s === "warning" ? "Attention" : "Problème";
@@ -113,9 +160,7 @@ function generatePdf(categories: CategoryResult[], siteUrl: string, scanInfo: { 
       </div>`;
   }).join("");
 
-  const totalChecks = categories.reduce((a, c) => a + c.checks.length, 0);
-  const okChecks = categories.reduce((a, c) => a + c.checks.filter(ch => ch.severity === "success").length, 0);
-  const score = Math.round((okChecks / totalChecks) * 100);
+  const score = weightedScore(categories);
   const scoreColor = score >= 80 ? "#16a34a" : score >= 50 ? "#d97706" : "#dc2626";
 
   const html = `<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><title>Audit — ${siteUrl}</title>
@@ -324,12 +369,7 @@ export default function Home() {
 
   const [activeTooltip, setActiveTooltip] = useState<string | null>(null);
 
-  const globalScore = results
-    ? Math.round(
-        (results.reduce((acc, cat) => acc + cat.checks.filter((c) => c.severity === "success").length, 0) /
-          results.reduce((acc, cat) => acc + cat.checks.length, 0)) * 100
-      )
-    : 0;
+  const globalScore = results ? weightedScore(results) : 0;
 
   const scoreColor = globalScore >= 80 ? "text-green-600" : globalScore >= 50 ? "text-amber-500" : "text-red-500";
   const scoreRing = globalScore >= 80 ? "ring-green-200" : globalScore >= 50 ? "ring-amber-200" : "ring-red-200";
