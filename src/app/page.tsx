@@ -110,6 +110,7 @@ export default function Home() {
     setIsScanning(true);
     setResults(null);
     setError("");
+    setScanUrl("");
     setProgress({ phase: "Démarrage...", pagesScanned: 0, totalPages: 0, currentUrl: "" });
 
     abortRef.current = new AbortController();
