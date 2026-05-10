@@ -167,9 +167,9 @@ function buildPdfHtml(categories: CategoryResult[], siteUrl: string, scanInfo: {
   const css = `
     *{box-sizing:border-box;margin:0;padding:0}
     body{font-family:system-ui,sans-serif;color:#111;background:#fff;padding:32px 24px;font-size:13px;line-height:1.5}
-    .report-header{display:table;width:100%;margin-bottom:28px;padding-bottom:20px;border-bottom:2px solid #e5e7eb}
-    .report-header-info{display:table-cell;vertical-align:middle}
-    .score-box{display:table-cell;vertical-align:middle;text-align:center;border-radius:16px;padding:20px 28px;width:150px;white-space:nowrap}
+    .report-header{overflow:hidden;margin-bottom:28px;padding-bottom:20px;border-bottom:2px solid #e5e7eb}
+    .report-header-info{overflow:hidden}
+    .score-box{float:right;text-align:center;margin-left:24px}
     .cat{margin-bottom:24px}
     .cat-title{font-size:15px;font-weight:700;margin:0 0 10px;padding-bottom:5px;border-bottom-width:2px;border-bottom-style:solid}
     .check{margin-bottom:7px;border:1px solid #e5e7eb;border-radius:7px;overflow:hidden}
@@ -200,7 +200,7 @@ function buildPdfHtml(categories: CategoryResult[], siteUrl: string, scanInfo: {
     "<div class=’report-header-info’><p style=’font-size:11px;color:#888;margin-bottom:3px’>Audit réalisé par Com d’Artisans</p>" +
     "<p style=’font-size:20px;font-weight:800;color:#337C5F’>" + esc(siteUrl) + "</p>" +
     "<p style=’font-size:11px;color:#888;margin-top:3px’>" + scanInfo.totalPages + " page" + (scanInfo.totalPages > 1 ? "s" : "") + " analysée" + (scanInfo.totalPages > 1 ? "s" : "") + " · " + date + "</p></div>" +
-    "<div class=’score-box’ style=’background:" + scoreColor + "’><p style=’font-size:64px;font-weight:900;color:#fff;line-height:1’>" + score + "</p><p style=’font-size:11px;color:rgba(255,255,255,0.8);margin-top:6px;font-weight:600;text-transform:uppercase;letter-spacing:0.05em’>Score global</p></div>" +
+    "<div class=’score-box’><p style=’font-size:72px;font-weight:900;color:" + scoreColor + ";line-height:1’>" + score + "</p><p style=’font-size:11px;color:#888;margin-top:4px;font-weight:600;text-transform:uppercase;letter-spacing:0.05em’>Score global</p></div>" +
     "</div>" +
     categoriesHtml +
     "</body></html>";
