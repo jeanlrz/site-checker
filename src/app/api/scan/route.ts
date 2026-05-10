@@ -27,10 +27,11 @@ export async function POST(req: NextRequest) {
       try {
         const startTime = Date.now();
 
-        // Phase 0: Check site is reachable (only block on 5xx — network errors may be Cloudflare/WAF blocking Vercel IPs)
+        // Phase 0: Resolve final URL after redirects (e.g. site.com → www.site.com)
         send({ type: "progress", phase: "Vérification de l'URL...", pagesScanned: 0, totalPages: 0, currentUrl: baseUrl });
         try {
           const checkRes = await fetch(baseUrl, {
+            redirect: "follow",
             signal: AbortSignal.timeout(8000),
             headers: { "User-Agent": "SiteChecker/1.0 (Com d'Artisans)" },
           });
@@ -38,6 +39,9 @@ export async function POST(req: NextRequest) {
             send({ type: "error", message: `Le site répond avec une erreur ${checkRes.status}. Vérifiez l'URL.` });
             return;
           }
+          // Use the final URL as baseUrl so www/non-www is consistent throughout
+          const finalOrigin = new URL(checkRes.url).origin;
+          if (finalOrigin && finalOrigin !== baseUrl) baseUrl = finalOrigin;
         } catch {
           // Network error or timeout: proceed anyway, the crawler will handle it
         }
