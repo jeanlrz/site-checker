@@ -14,6 +14,7 @@ export interface CheckResult {
   severity: Severity;
   count: number;
   items: CheckItem[];
+  tooltip?: string;
 }
 
 export interface CategoryResult {

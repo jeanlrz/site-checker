@@ -22,6 +22,7 @@ import {
   RotateCcw,
   Download,
   FileText,
+  Info,
 } from "lucide-react";
 import type { CategoryResult, CheckResult, ScanEvent, Severity } from "@/lib/types";
 
@@ -73,6 +74,78 @@ function severityLabel(s: Severity) {
     case "error": return "Problème";
     default: return "";
   }
+}
+
+function generatePdf(categories: CategoryResult[], siteUrl: string, scanInfo: { totalPages: number; duration: number }) {
+  const date = new Date().toLocaleDateString("fr-FR", { day: "2-digit", month: "long", year: "numeric" });
+  const severityLabel = (s: string) => s === "success" ? "OK" : s === "warning" ? "Attention" : "Problème";
+  const severityColor = (s: string) => s === "success" ? "#16a34a" : s === "warning" ? "#d97706" : "#dc2626";
+  const severityBg = (s: string) => s === "success" ? "#f0fdf4" : s === "warning" ? "#fffbeb" : "#fef2f2";
+
+  const categoriesHtml = categories.map(cat => {
+    const checksHtml = [...cat.checks].sort((a, b) => {
+      const o: Record<string, number> = { error: 0, warning: 1, success: 2 };
+      return (o[a.severity] ?? 2) - (o[b.severity] ?? 2);
+    }).map(check => {
+      const itemsHtml = check.items.slice(0, 30).map(item =>
+        `<tr style="border-bottom:1px solid #f0f0f0">
+          <td style="padding:4px 8px;font-family:monospace;font-size:11px;color:#337C5F;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${item.page.replace(/^https?:\/\//, "")}</td>
+          ${item.element ? `<td style="padding:4px 8px;font-family:monospace;font-size:11px;color:#888">${item.element}</td>` : "<td></td>"}
+          <td style="padding:4px 8px;font-size:11px;color:#333">${item.detail}</td>
+        </tr>`
+      ).join("");
+      return `
+        <div style="margin-bottom:8px;border:1px solid #e5e7eb;border-radius:8px;overflow:hidden">
+          <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:${severityBg(check.severity)}">
+            <span style="width:10px;height:10px;border-radius:50%;background:${severityColor(check.severity)};flex-shrink:0"></span>
+            <span style="font-weight:600;font-size:13px;flex:1">${check.label}</span>
+            <span style="font-size:12px;color:${severityColor(check.severity)};font-weight:600">${severityLabel(check.severity)}${check.count > 0 ? ` (${check.count})` : ""}</span>
+          </div>
+          ${check.items.length > 0 ? `<table style="width:100%;border-collapse:collapse;font-size:11px">${itemsHtml}</table>` : ""}
+          ${check.items.length > 30 ? `<p style="padding:4px 14px;font-size:11px;color:#888">… et ${check.items.length - 30} autres</p>` : ""}
+        </div>`;
+    }).join("");
+    const catColor = severityColor(cat.severity);
+    return `
+      <div style="margin-bottom:28px;page-break-inside:avoid">
+        <h2 style="font-size:16px;font-weight:700;margin:0 0 12px;padding-bottom:6px;border-bottom:2px solid ${catColor};color:${catColor}">${cat.label}</h2>
+        ${checksHtml}
+      </div>`;
+  }).join("");
+
+  const totalChecks = categories.reduce((a, c) => a + c.checks.length, 0);
+  const okChecks = categories.reduce((a, c) => a + c.checks.filter(ch => ch.severity === "success").length, 0);
+  const score = Math.round((okChecks / totalChecks) * 100);
+  const scoreColor = score >= 80 ? "#16a34a" : score >= 50 ? "#d97706" : "#dc2626";
+
+  const html = `<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><title>Audit — ${siteUrl}</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: system-ui, sans-serif; color: #111; background: #fff; padding: 40px; font-size: 14px; }
+    @media print {
+      body { padding: 20px; }
+      .no-print { display: none !important; }
+    }
+  </style></head><body>
+  <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:32px;padding-bottom:24px;border-bottom:2px solid #e5e7eb">
+    <div>
+      <p style="font-size:12px;color:#888;margin-bottom:4px">Audit réalisé par Com d'Artisans</p>
+      <h1 style="font-size:22px;font-weight:800;color:#337C5F">${siteUrl}</h1>
+      <p style="font-size:12px;color:#888;margin-top:4px">${scanInfo.totalPages} page${scanInfo.totalPages > 1 ? "s" : ""} analysée${scanInfo.totalPages > 1 ? "s" : ""} · ${date}</p>
+    </div>
+    <div style="text-align:center;background:#f8f8f8;border-radius:12px;padding:16px 24px">
+      <p style="font-size:36px;font-weight:900;color:${scoreColor};line-height:1">${score}</p>
+      <p style="font-size:11px;color:#888;margin-top:4px">Score global</p>
+    </div>
+  </div>
+  <div class="no-print" style="margin-bottom:24px">
+    <button onclick="window.print()" style="background:#337C5F;color:#fff;border:none;padding:10px 20px;border-radius:8px;font-size:14px;cursor:pointer;font-weight:600">Imprimer / Enregistrer en PDF</button>
+  </div>
+  ${categoriesHtml}
+  </body></html>`;
+
+  const win = window.open("", "_blank");
+  if (win) { win.document.write(html); win.document.close(); }
 }
 
 export default function Home() {
@@ -264,25 +337,35 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-background">
       <header className="border-b bg-white sticky top-0 z-50">
-        <div className="w-[85vw] mx-auto px-4 md:px-6 py-4 relative flex items-center justify-center">
-          <div className="flex flex-col sm:flex-row items-center gap-2 sm:gap-3">
+        <div className="w-full max-w-[95vw] mx-auto px-4 md:px-6 py-3 flex flex-wrap items-center justify-between gap-2">
+          <div className="flex items-center gap-2 sm:gap-3">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src="/logo.png"
               alt="Com d'Artisans"
-              className="h-10 cursor-pointer"
+              className="h-8 sm:h-10 cursor-pointer"
               onClick={() => askConfirm(() => { window.location.hash = ""; window.location.reload(); })}
             />
             <div className="hidden sm:block w-px h-6 bg-border self-center" />
-            <div className="flex flex-col items-center sm:items-start">
-              <span className="text-sm sm:text-base font-medium text-muted-foreground">Site Checker</span>
+            <div className="flex flex-col items-start">
+              <span className="text-sm font-medium text-muted-foreground leading-tight">Site Checker</span>
               {(results || isScanning) && url && (
-                <span className="text-xs text-brand font-mono">{scanUrl || url.replace(/^https?:\/\//, "").replace(/\/$/, "")}</span>
+                <span className="text-xs text-brand font-mono leading-tight">{scanUrl || url.replace(/^https?:\/\//, "").replace(/\/$/, "")}</span>
               )}
             </div>
           </div>
           {results && (
-            <div className="absolute right-6 flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => generatePdf(results, scanUrl || url.replace(/^https?:\/\//, "").replace(/\/$/, ""), scanInfo)}
+                className="text-muted-foreground border-border/60 hover:bg-muted/50"
+              >
+                <Download className="w-3 h-3 mr-1" />
+                <span className="hidden sm:inline">Exporter PDF</span>
+                <span className="sm:hidden">PDF</span>
+              </Button>
               <Button
                 variant="outline"
                 size="sm"
@@ -296,7 +379,8 @@ export default function Home() {
                 className="text-brand border-brand/30 hover:bg-brand/5"
               >
                 <RotateCcw className="w-3 h-3 mr-1" />
-                Rescanner
+                <span className="hidden sm:inline">Rescanner</span>
+                <span className="sm:hidden"><RotateCcw className="w-3 h-3" /></span>
               </Button>
               <Button
                 variant="ghost"
@@ -304,14 +388,15 @@ export default function Home() {
                 onClick={() => askConfirm(() => { handleReset(); window.location.hash = ""; })}
                 className="text-muted-foreground"
               >
-                Nouveau scan
+                <span className="hidden sm:inline">Nouveau scan</span>
+                <span className="sm:hidden">Nouveau</span>
               </Button>
             </div>
           )}
         </div>
       </header>
 
-      <main className="w-[85vw] mx-auto px-4 md:px-6 py-8">
+      <main className="w-full max-w-[95vw] md:max-w-[85vw] mx-auto px-4 md:px-6 py-8">
         {/* URL Input */}
         {!results && !isScanning && (
           <div className="flex flex-col items-center justify-center min-h-[60vh] gap-8">
@@ -320,7 +405,7 @@ export default function Home() {
               <p className="text-muted-foreground text-lg">Entrez l&apos;URL de votre site pour lancer l&apos;audit complet.</p>
             </div>
 
-            <div className="w-[85vw] flex flex-col sm:flex-row gap-3">
+            <div className="w-full max-w-[85vw] flex flex-col sm:flex-row gap-3">
               <div className="relative flex-1">
                 <input
                   type="text"
@@ -367,17 +452,17 @@ export default function Home() {
             </div>
 
             {error && (
-              <div className="p-4 bg-red-50 border border-red-200 rounded-lg text-sm text-red-600 w-[85vw]">
+              <div className="p-4 bg-red-50 border border-red-200 rounded-lg text-sm text-red-600 w-full max-w-[85vw]">
                 {error}
               </div>
             )}
 
-            <div className="w-[85vw] grid grid-cols-3 gap-3 text-sm text-muted-foreground mt-4">
+            <div className="w-full max-w-[85vw] grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 text-sm text-muted-foreground mt-4">
               {[
                 { icon: <Link className="w-5 h-5" />, label: "Liens cassés", desc: "Détecte les liens internes qui pointent vers des pages inexistantes (404) ou des boutons sans lien." },
                 { icon: <Image className="w-5 h-5" />, label: "Images & alts", desc: "Vérifie que toutes les images ont un texte alternatif, détecte les images cassées, trop lourdes et non converties en WebP." },
                 { icon: <Search className="w-5 h-5" />, label: "SEO", desc: "Contrôle les balises title, meta description et H1 — détecte les absences, doublons et textes trop longs (seuils Yoast)." },
-                { icon: <Settings className="w-5 h-5" />, label: "Technique", desc: "Vérifie le favicon, sitemap.xml, robots.txt, responsive, HTTPS, Lorem ipsum et Google Analytics." },
+                { icon: <Settings className="w-5 h-5" />, label: "Technique", desc: "Vérifie le favicon, sitemap.xml, robots.txt, le responsive, Lorem ipsum et Google Tag Manager." },
                 { icon: <Zap className="w-5 h-5" />, label: "Performance", desc: "Détecte les pages trop lourdes ou trop lentes au chargement." },
                 { icon: <FileText className="w-5 h-5" />, label: "Pages", desc: "Vérifie la présence des pages obligatoires : mentions légales, politique de confidentialité et politique de cookies." },
               ].map((item) => (
@@ -524,6 +609,7 @@ export default function Home() {
 function CheckRow({ check, expanded, onToggle }: { check: CheckResult; expanded: boolean; onToggle: () => void }) {
   const isOk = check.severity === "success";
   const [showAll, setShowAll] = useState(false);
+  const [showTooltip, setShowTooltip] = useState(false);
 
   return (
     <div className={`rounded-lg border ${isOk ? "border-green-100 bg-green-50/50" : "border-border bg-white"}`}>
@@ -533,7 +619,22 @@ function CheckRow({ check, expanded, onToggle }: { check: CheckResult; expanded:
         className="w-full flex items-center gap-3 px-4 py-3 text-left text-sm hover:bg-muted/30 transition-colors disabled:hover:bg-transparent"
       >
         {severityIcon(check.severity)}
-        <span className="flex-1 font-medium">{check.label}</span>
+        <span className="flex-1 font-medium flex items-center gap-1.5">
+          {check.label}
+          {check.tooltip && (
+            <span
+              className="relative inline-flex"
+              onClick={(e) => { e.stopPropagation(); setShowTooltip(v => !v); }}
+            >
+              <Info className="w-3.5 h-3.5 text-muted-foreground hover:text-brand transition-colors cursor-pointer shrink-0" />
+              {showTooltip && (
+                <span className="absolute left-5 top-0 z-50 w-64 text-xs text-foreground bg-white border border-border rounded-lg shadow-lg p-3 font-normal leading-relaxed">
+                  {check.tooltip}
+                </span>
+              )}
+            </span>
+          )}
+        </span>
         {!isOk && (
           <Badge variant="outline" className="text-xs">
             {check.count}

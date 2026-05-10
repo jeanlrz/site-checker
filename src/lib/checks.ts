@@ -255,20 +255,6 @@ function checkTechnical(pages: PageData[], baseUrl: string): CategoryResult {
   }
   checks.push(make("viewport", "technical", "Meta viewport (responsive)", noViewport));
 
-  // HTTPS mixed content
-  const mixed: CheckItem[] = [];
-  for (const page of pages) {
-    if (!page.html || !isHtmlPage(page)) continue;
-    const $ = cheerio.load(page.html);
-    $("script[src], link[href], img[src], iframe[src]").each((_, el) => {
-      const src = $(el).attr("src") || $(el).attr("href") || "";
-      if (src.startsWith("http://") && !src.includes("localhost")) {
-        mixed.push({ page: page.url, element: el.tagName, detail: `Ressource HTTP: ${src.slice(0, 80)}` });
-      }
-    });
-  }
-  checks.push(make("mixed-content", "technical", "Contenu mixte HTTP/HTTPS", mixed));
-
   // Sitemap — accepts sitemap.xml, sitemap_index.xml, or any sitemap variant
   const sitemapPage = pages.find((p) => p.url.includes("sitemap") && p.status === 200 && p.html);
   checks.push({
@@ -310,10 +296,11 @@ function checkTechnical(pages: PageData[], baseUrl: string): CategoryResult {
     checks.push({
       id: "no-analytics",
       category: "technical",
-      label: "Google Analytics / GTM",
+      label: "Google Analytics / Google Tag Manager",
       severity: hasGA ? "success" : "warning",
       count: hasGA ? 0 : 1,
-      items: hasGA ? [] : [{ page: homepageGA.url, detail: "Aucun script Analytics/GTM détecté" }],
+      items: hasGA ? [] : [{ page: homepageGA.url, detail: "Aucun script Analytics ou Google Tag Manager détecté" }],
+      tooltip: "Google Tag Manager (GTM) est un outil qui permet d'ajouter des scripts de suivi (Analytics, pixels pub…) sur un site sans toucher au code. Indispensable pour mesurer les visites et les conversions.",
     });
   }
 
