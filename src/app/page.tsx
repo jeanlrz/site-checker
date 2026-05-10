@@ -127,7 +127,7 @@ function esc(s: string): string {
   return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 }
 
-function buildPdfHtml(categories: CategoryResult[], siteUrl: string, scanInfo: { totalPages: number; duration: number }): string {
+function buildPdfHtml(categories: CategoryResult[], siteUrl: string, scanInfo: { totalPages: number; duration: number }, logoUrl?: string): string {
   const date = new Date().toLocaleDateString("fr-FR", { day: "2-digit", month: "long", year: "numeric" });
   const severityLabel = (s: string) => s === "success" ? "OK" : s === "warning" ? "Attention" : "Problème";
   const severityColor = (s: string) => s === "success" ? "#16a34a" : s === "warning" ? "#d97706" : "#dc2626";
@@ -198,6 +198,7 @@ function buildPdfHtml(categories: CategoryResult[], siteUrl: string, scanInfo: {
   return "<!DOCTYPE html><html lang=’fr’><head><meta charset=’UTF-8’><meta name=’viewport’ content=’width=device-width,initial-scale=1’><style>" + css + "</style></head><body>" +
     "<div class=’report-header’>" +
     "<div class=’report-header-info’><p style=’font-size:11px;color:#888;margin-bottom:3px’>Audit réalisé par Com d’Artisans</p>" +
+    (logoUrl ? "<img src=’" + esc(logoUrl) + "’ alt=’Logo’ style=’height:36px;width:auto;max-width:160px;object-fit:contain;display:block;margin-bottom:6px’ onerror=\"this.style.display=’none’\">" : "") +
     "<p style=’font-size:20px;font-weight:800;color:#337C5F’>" + esc(siteUrl) + "</p>" +
     "<p style=’font-size:11px;color:#888;margin-top:3px’>" + scanInfo.totalPages + " page" + (scanInfo.totalPages > 1 ? "s" : "") + " analysée" + (scanInfo.totalPages > 1 ? "s" : "") + " · " + date + "</p></div>" +
     "<div class=’score-box’><p style=’font-size:32px;font-weight:900;color:" + scoreColor + ";line-height:1’>" + score + "</p><p style=’font-size:10px;color:#888;margin-top:3px’>Score global</p></div>" +
@@ -221,6 +222,7 @@ export default function Home() {
   const [showPages, setShowPages] = useState(false);
   const [showPdf, setShowPdf] = useState(false);
   const [pdfHtml, setPdfHtml] = useState("");
+  const [siteLogoUrl, setSiteLogoUrl] = useState("");
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const abortRef = useRef<AbortController | null>(null);
 
@@ -266,6 +268,7 @@ export default function Home() {
     setScanUrl("");
     setScannedPages([]);
     setShowPages(false);
+    setSiteLogoUrl("");
     setProgress({ phase: "Démarrage...", pagesScanned: 0, totalPages: 0, currentUrl: "" });
 
     abortRef.current = new AbortController();
@@ -309,6 +312,7 @@ export default function Home() {
               setScanInfo({ totalPages: event.totalPages, duration: event.duration });
               const resolved = event.resolvedUrl.replace(/^https?:\/\//, "").replace(/\/$/, "");
               setScanUrl(resolved);
+              if (event.siteLogoUrl) setSiteLogoUrl(event.siteLogoUrl);
               setHistory(prev => {
                 const updated = [resolved, ...prev.filter(h => h !== resolved)].slice(0, 20);
                 try { localStorage.setItem("scan-history", JSON.stringify(updated)); } catch { /* ignore */ }
@@ -421,7 +425,7 @@ export default function Home() {
           </div>
           {results && (
             <div className="absolute right-6 flex items-center gap-2">
-              <Button variant="outline" size="sm" onClick={() => { setPdfHtml(buildPdfHtml(results, scanUrl || url.replace(/^https?:\/\//, "").replace(/\/$/, ""), scanInfo)); setShowPdf(true); }} className="text-muted-foreground border-border/60 hover:bg-muted/50">
+              <Button variant="outline" size="sm" onClick={() => { setPdfHtml(buildPdfHtml(results, scanUrl || url.replace(/^https?:\/\//, "").replace(/\/$/, ""), scanInfo, siteLogoUrl || undefined)); setShowPdf(true); }} className="text-muted-foreground border-border/60 hover:bg-muted/50">
                 <Download className="w-3 h-3 mr-1" />Exporter PDF
               </Button>
               <Button variant="outline" size="sm" onClick={() => { setResults(null); setError(""); setExpandedChecks(new Set()); window.location.hash = ""; handleScan(); }} className="text-brand border-brand/30 hover:bg-brand/5">
@@ -569,15 +573,21 @@ export default function Home() {
           <div className="space-y-8">
             {/* Score global */}
             <div className="flex flex-col sm:flex-row items-center gap-6 p-6 bg-white rounded-2xl border border-border">
-              <div className={`w-24 h-24 rounded-full flex items-center justify-center ring-4 ${scoreRing} bg-white`}>
+              <div className={`w-24 h-24 rounded-full flex items-center justify-center ring-4 ${scoreRing} bg-white shrink-0`}>
                 <span className={`text-3xl font-bold ${scoreColor}`}>{globalScore}</span>
               </div>
-              <div className="flex-1 text-center sm:text-left">
-                <p className="text-sm font-semibold text-brand mb-1">{scanUrl || url.replace(/^https?:\/\//, "").replace(/\/$/, "")}</p>
+              <div className="flex-1 text-center sm:text-left min-w-0">
+                <div className="flex items-center justify-center sm:justify-start gap-2 mb-1">
+                  {siteLogoUrl && (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={siteLogoUrl} alt="Logo" className="h-7 w-auto max-w-[120px] object-contain" onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
+                  )}
+                  <p className="text-sm font-semibold text-brand truncate">{scanUrl || url.replace(/^https?:\/\//, "").replace(/\/$/, "")}</p>
+                </div>
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => { setPdfHtml(buildPdfHtml(results, scanUrl || url.replace(/^https?:\/\//, "").replace(/\/$/, ""), scanInfo)); setShowPdf(true); }}
+                  onClick={() => { setPdfHtml(buildPdfHtml(results, scanUrl || url.replace(/^https?:\/\//, "").replace(/\/$/, ""), scanInfo, siteLogoUrl || undefined)); setShowPdf(true); }}
                   className="sm:hidden mb-2 text-muted-foreground border-border/60"
                 >
                   <Download className="w-3 h-3 mr-1" />

@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
 import { crawlSite } from "@/lib/crawler";
 import { runAllChecks } from "@/lib/checks";
+import * as cheerio from "cheerio";
 
 export async function POST(req: NextRequest) {
   const { url } = await req.json();
@@ -153,7 +154,39 @@ export async function POST(req: NextRequest) {
 
         const duration = Date.now() - startTime;
 
-        send({ type: "done", categories, totalPages: pages.length, duration, resolvedUrl: baseUrl });
+        // Extraire le logo depuis la page d'accueil
+        let siteLogoUrl: string | undefined;
+        const homePage = pages.find(p => p.html && (p.url === baseUrl || p.url === baseUrl + "/"));
+        if (homePage?.html) {
+          const $h = cheerio.load(homePage.html);
+          const logoSelectors = [
+            "a.custom-logo-link img",
+            "img.custom-logo",
+            ".elementor-widget-site-logo img",
+            ".site-logo img",
+            "header img[class*='logo']",
+            "header img[id*='logo']",
+            "header img[alt*='logo' i]",
+            "#logo img",
+            ".logo img",
+          ];
+          for (const sel of logoSelectors) {
+            const src = $h(sel).first().attr("src");
+            if (src && !src.startsWith("data:")) {
+              try { siteLogoUrl = new URL(src, baseUrl).href; } catch { /* ignore */ }
+              break;
+            }
+          }
+          // Fallback : apple-touch-icon (toujours le logo de marque)
+          if (!siteLogoUrl) {
+            const appleIcon = $h('link[rel="apple-touch-icon"]').attr("href");
+            if (appleIcon) {
+              try { siteLogoUrl = new URL(appleIcon, baseUrl).href; } catch { /* ignore */ }
+            }
+          }
+        }
+
+        send({ type: "done", categories, totalPages: pages.length, duration, resolvedUrl: baseUrl, siteLogoUrl });
       } catch (err) {
         send({ type: "error", message: err instanceof Error ? err.message : "Erreur inconnue" });
       } finally {

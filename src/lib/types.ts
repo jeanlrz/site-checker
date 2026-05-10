@@ -40,6 +40,7 @@ export interface ScanDone {
   totalPages: number;
   duration: number;
   resolvedUrl: string;
+  siteLogoUrl?: string;
 }
 
 export interface ScanError {
