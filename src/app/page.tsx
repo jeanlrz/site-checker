@@ -133,86 +133,132 @@ function weightedScore(categories: CategoryResult[]): number {
   return Math.round((okWeight / totalWeight) * 100);
 }
 
-function esc(s: string): string {
-  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
-}
+async function exportToDocx(
+  categories: CategoryResult[],
+  siteUrl: string,
+  scanInfo: { totalPages: number; duration: number },
+): Promise<void> {
+  const { Document, Packer, Paragraph, TextRun, HeadingLevel, ExternalHyperlink, UnderlineType } = await import("docx");
 
-function buildPdfHtml(categories: CategoryResult[], siteUrl: string, scanInfo: { totalPages: number; duration: number }): string {
   const date = new Date().toLocaleDateString("fr-FR", { day: "2-digit", month: "long", year: "numeric" });
-  const severityLabel = (s: string) => s === "success" ? "OK" : s === "warning" ? "Attention" : "Problème";
-  const severityColor = (s: string) => s === "success" ? "#16a34a" : s === "warning" ? "#d97706" : "#dc2626";
-  const severityBg = (s: string) => s === "success" ? "#f0fdf4" : s === "warning" ? "#fffbeb" : "#fef2f2";
-
-  const categoriesHtml = categories.map(cat => {
-    const checksHtml = [...cat.checks].sort((a, b) => {
-      const o: Record<string, number> = { error: 0, warning: 1, success: 2 };
-      return (o[a.severity] ?? 2) - (o[b.severity] ?? 2);
-    }).map(check => {
-      const itemsHtml = check.items.slice(0, 30).map(item =>
-        "<tr style='border-bottom:1px solid #f0f0f0'>" +
-        "<td style='padding:5px 10px;font-family:monospace;font-size:11px;color:#337C5F;width:50%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap'>" + esc(item.page.replace(/^https?:\/\//, "")) + "</td>" +
-        "<td style='padding:5px 10px;font-size:11px;color:#333;width:50%'>" + esc(item.detail) + "</td>" +
-        "</tr>"
-      ).join("");
-      return "<div class='check'>" +
-        "<div class='check-head' style='background:" + severityBg(check.severity) + "'>" +
-        "<span class='dot' style='background:" + severityColor(check.severity) + "'></span>" +
-        "<span class='check-label'>" + esc(check.label) + "</span>" +
-        "<span class='check-status' style='color:" + severityColor(check.severity) + "'>" + severityLabel(check.severity) + (check.count > 0 ? " (" + check.count + ")" : "") + "</span>" +
-        "</div>" +
-        (check.items.length > 0 ? "<table>" + itemsHtml + "</table>" : "") +
-        (check.items.length > 30 ? "<p class='more'>… et " + (check.items.length - 30) + " autres</p>" : "") +
-        "</div>";
-    }).join("");
-    const catColor = severityColor(cat.severity);
-    return "<div class='cat'>" +
-      "<h2 class='cat-title' style='border-color:" + catColor + ";color:" + catColor + "'>" + esc(cat.label) + "</h2>" +
-      checksHtml +
-      "</div>";
-  }).join("");
-
   const score = weightedScore(categories);
-  const scoreColor = score >= 80 ? "#16a34a" : score >= 50 ? "#d97706" : "#dc2626";
 
-  const css = `
-    *{box-sizing:border-box;margin:0;padding:0}
-    body{font-family:system-ui,sans-serif;color:#111;background:#fff;padding:32px 24px;font-size:13px;line-height:1.5}
-    .report-header{overflow:hidden;margin-bottom:28px;padding-bottom:20px;border-bottom:2px solid #e5e7eb}
-    .report-header-info{overflow:hidden}
-    .score-box{float:right;text-align:center;margin-left:24px}
-    .cat{margin-bottom:24px}
-    .cat-title{font-size:15px;font-weight:700;margin:0 0 10px;padding-bottom:5px;border-bottom-width:2px;border-bottom-style:solid}
-    .check{margin-bottom:7px;border:1px solid #e5e7eb;border-radius:7px;overflow:hidden}
-    .check-head{display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:9px 12px}
-    .dot{width:9px;height:9px;border-radius:50%;flex-shrink:0}
-    .check-label{font-weight:600;font-size:12px;flex:1;min-width:0}
-    .check-status{font-size:11px;font-weight:600;white-space:nowrap}
-    table{width:100%;border-collapse:collapse;font-size:11px}
-    td{padding:4px 10px;border-bottom:1px solid #f0f0f0;word-break:break-word}
-    td:first-child{color:#337C5F;font-family:monospace;width:45%;max-width:280px}
-    td:last-child{color:#333;width:55%}
-    .more{padding:4px 12px;font-size:11px;color:#888}
-    @media (max-width:480px){
-      body{padding:16px 12px;font-size:12px}
-      .score-box{width:100%}
-      td:first-child{width:40%}
-      td:last-child{width:60%}
-    }
-    @media print{
-      body{padding:16px 12px}
-      .no-print{display:none!important}
-    }
-  `;
+  const C = { brand: "337C5F", green: "16a34a", amber: "d97706", red: "dc2626", gray: "6b7280", dark: "111827" };
+  const sCol = (s: string) => s === "success" ? C.green : s === "warning" ? C.amber : C.red;
+  const sLabel = (s: string) => s === "success" ? "✓ OK" : s === "warning" ? "⚠ Attention" : "✗ Problème";
+  const scoreCol = score >= 80 ? C.green : score >= 50 ? C.amber : C.red;
 
-  return "<!DOCTYPE html><html lang=’fr’><head><meta charset=’UTF-8’><meta name=’viewport’ content=’width=device-width,initial-scale=1’><style>" + css + "</style></head><body>" +
-    "<div class=’report-header’>" +
-    "<div class=’report-header-info’><p style=’font-size:11px;color:#888;margin-bottom:3px’>Audit réalisé par Com d’Artisans</p>" +
-    "<p style=’font-size:20px;font-weight:800;color:#337C5F’>" + esc(siteUrl) + "</p>" +
-    "<p style=’font-size:11px;color:#888;margin-top:3px’>" + scanInfo.totalPages + " page" + (scanInfo.totalPages > 1 ? "s" : "") + " analysée" + (scanInfo.totalPages > 1 ? "s" : "") + " · " + date + "</p></div>" +
-    "<div class=’score-box’><p style=’font-size:72px;font-weight:900;color:" + scoreColor + ";line-height:1’>" + score + "</p><p style=’font-size:11px;color:#888;margin-top:4px;font-weight:600;text-transform:uppercase;letter-spacing:0.05em’>Score global</p></div>" +
-    "</div>" +
-    categoriesHtml +
-    "</body></html>";
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const children: any[] = [];
+
+  // ── En-tête ──
+  children.push(new Paragraph({
+    children: [new TextRun({ text: "Rapport d’audit — Com d’Artisans", bold: true, size: 36, color: C.brand })],
+    spacing: { after: 120 },
+  }));
+  children.push(new Paragraph({
+    children: [
+      new ExternalHyperlink({ link: `https://${siteUrl}`, children: [new TextRun({ text: siteUrl, color: C.brand, underline: { type: UnderlineType.SINGLE }, size: 26, bold: true })] }),
+    ],
+    spacing: { after: 80 },
+  }));
+  children.push(new Paragraph({
+    children: [new TextRun({ text: `${scanInfo.totalPages} page${scanInfo.totalPages > 1 ? "s" : ""} analysée${scanInfo.totalPages > 1 ? "s" : ""} · ${date}`, color: C.gray, size: 20 })],
+    spacing: { after: 60 },
+  }));
+  children.push(new Paragraph({
+    children: [
+      new TextRun({ text: "Score global : ", size: 24, bold: true }),
+      new TextRun({ text: `${score}/100`, size: 28, bold: true, color: scoreCol }),
+    ],
+    spacing: { after: 480 },
+  }));
+
+  // ── Catégories ──
+  for (const cat of categories) {
+    const issueCount = cat.checks.filter(c => c.severity !== "success").length;
+    children.push(new Paragraph({
+      heading: HeadingLevel.HEADING_1,
+      children: [
+        new TextRun({ text: cat.label, bold: true, size: 28, color: sCol(cat.severity) }),
+        new TextRun({ text: issueCount > 0 ? `  —  ${issueCount} problème${issueCount > 1 ? "s" : ""}` : "  —  OK", color: C.gray, size: 22 }),
+      ],
+      spacing: { before: 400, after: 160 },
+    }));
+
+    const sorted = [...cat.checks].sort((a, b) => {
+      const o: Record<string, number> = { error: 0, warning: 1, info: 2, success: 3 };
+      return (o[a.severity] ?? 3) - (o[b.severity] ?? 3);
+    });
+
+    for (const check of sorted) {
+      children.push(new Paragraph({
+        heading: HeadingLevel.HEADING_2,
+        children: [
+          new TextRun({ text: `${sLabel(check.severity)}  `, size: 20, bold: true, color: sCol(check.severity) }),
+          new TextRun({ text: check.label, size: 20, bold: true, color: C.dark }),
+          ...(check.count > 0 && check.id !== "plugins" ? [new TextRun({ text: `  (${check.count})`, size: 18, color: C.gray })] : []),
+        ],
+        spacing: { before: 240, after: 80 },
+      }));
+
+      // Plugins : liste colorée
+      if (check.id === "plugins") {
+        for (const item of check.items) {
+          children.push(new Paragraph({
+            children: [new TextRun({ text: `• ${item.detail}`, size: 18, color: item.highlight === "danger" ? C.red : C.green })],
+            indent: { left: 360 },
+            spacing: { after: 40 },
+          }));
+        }
+        continue;
+      }
+
+      // Items avec liens cliquables
+      for (const item of check.items.slice(0, 40)) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const runs: any[] = [];
+        if (item.page?.startsWith("http")) {
+          runs.push(new ExternalHyperlink({
+            link: item.page,
+            children: [new TextRun({ text: shortUrl(item.page), color: C.brand, underline: { type: UnderlineType.SINGLE }, size: 18 })],
+          }));
+          runs.push(new TextRun({ text: "  ", size: 18 }));
+        }
+        runs.push(new TextRun({ text: item.detail, size: 18, color: C.dark }));
+        children.push(new Paragraph({ children: runs, indent: { left: 360 }, spacing: { after: 40 } }));
+      }
+      if (check.items.length > 40) {
+        children.push(new Paragraph({
+          children: [new TextRun({ text: `… et ${check.items.length - 40} autres`, size: 17, color: C.gray, italics: true })],
+          indent: { left: 360 },
+          spacing: { after: 40 },
+        }));
+      }
+    }
+  }
+
+  // ── Pied de page ──
+  children.push(new Paragraph({
+    children: [new TextRun({ text: "Audit réalisé par Com d’Artisans — Site Checker", size: 18, color: C.gray, italics: true })],
+    spacing: { before: 600 },
+  }));
+
+  const doc = new Document({
+    creator: "Site Checker — Com d’Artisans",
+    title: `Rapport d’audit — ${siteUrl}`,
+    sections: [{ children }],
+  });
+
+  const blob = await Packer.toBlob(doc);
+  const objUrl = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = objUrl;
+  a.download = `audit-${siteUrl.replace(/[^a-z0-9]/gi, "-")}.docx`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(objUrl);
 }
 
 export default function Home() {
@@ -225,22 +271,11 @@ export default function Home() {
   const [error, setError] = useState("");
   const [expandedChecks, setExpandedChecks] = useState<Set<string>>(new Set());
   const [history, setHistory] = useState<string[]>([]);
-  const [showSuggestions, setShowSuggestions] = useState(false);
   const [scannedPages, setScannedPages] = useState<string[]>([]);
   const [showPages, setShowPages] = useState(false);
-  const [showPdf, setShowPdf] = useState(false);
-  const [pdfHtml, setPdfHtml] = useState("");
+  const [isExporting, setIsExporting] = useState(false);
   const [siteLogoUrl, setSiteLogoUrl] = useState("");
-  const iframeRef = useRef<HTMLIFrameElement>(null);
   const abortRef = useRef<AbortController | null>(null);
-
-  useEffect(() => {
-    if (showPdf && iframeRef.current && pdfHtml) {
-      iframeRef.current.srcdoc = pdfHtml;
-    }
-    document.body.style.overflow = showPdf ? "hidden" : "";
-    return () => { document.body.style.overflow = ""; };
-  }, [showPdf, pdfHtml]);
 
   useEffect(() => {
     try {
@@ -433,8 +468,8 @@ export default function Home() {
           </div>
           {results && (
             <div className="absolute right-6 flex items-center gap-2">
-              <Button variant="outline" size="sm" onClick={() => { setPdfHtml(buildPdfHtml(results, scanUrl || url.replace(/^https?:\/\//, "").replace(/\/$/, ""), scanInfo)); setShowPdf(true); }} className="text-muted-foreground border-border/60 hover:bg-muted/50">
-                <Download className="w-3 h-3 mr-1" />Exporter PDF
+              <Button variant="outline" size="sm" disabled={isExporting} onClick={async () => { setIsExporting(true); try { await exportToDocx(results, scanUrl || url.replace(/^https?:\/\//, "").replace(/\/$/, ""), scanInfo); } finally { setIsExporting(false); } }} className="text-muted-foreground border-border/60 hover:bg-muted/50">
+                <Download className="w-3 h-3 mr-1" />{isExporting ? "Génération…" : "Exporter Google Docs"}
               </Button>
               <Button variant="outline" size="sm" onClick={() => { setResults(null); setError(""); setExpandedChecks(new Set()); window.location.hash = ""; handleScan(); }} className="text-brand border-brand/30 hover:bg-brand/5">
                 <RotateCcw className="w-3 h-3 mr-1" />Rescanner
@@ -574,11 +609,12 @@ export default function Home() {
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => { setPdfHtml(buildPdfHtml(results, scanUrl || url.replace(/^https?:\/\//, "").replace(/\/$/, ""), scanInfo)); setShowPdf(true); }}
+                  disabled={isExporting}
+                  onClick={async () => { setIsExporting(true); try { await exportToDocx(results, scanUrl || url.replace(/^https?:\/\//, "").replace(/\/$/, ""), scanInfo); } finally { setIsExporting(false); } }}
                   className="sm:hidden mb-2 text-muted-foreground border-border/60"
                 >
                   <Download className="w-3 h-3 mr-1" />
-                  Exporter PDF
+                  {isExporting ? "Génération…" : "Exporter Google Docs"}
                 </Button>
                 <h2 className="text-xl font-bold">
                   {globalScore >= 80 ? "Bon travail !" : globalScore >= 50 ? "Des points à corriger" : "Attention, plusieurs problèmes"}
@@ -663,23 +699,6 @@ export default function Home() {
               </Button>
             </div>
           </div>
-        </div>
-      )}
-
-      {showPdf && (
-        <div className="fixed inset-0 z-[100] flex flex-col bg-white">
-          <div className="flex items-center justify-between px-4 py-2 border-b bg-white shrink-0 gap-2">
-            <span className="text-sm font-medium truncate">{scanUrl || url.replace(/^https?:\/\//, "").replace(/\/$/, "")} — Rapport</span>
-            <div className="flex gap-2 shrink-0">
-              <Button size="sm" onClick={() => iframeRef.current?.contentWindow?.print()} className="bg-brand hover:bg-brand-dark text-white">
-                <Download className="w-3 h-3 mr-1" />Imprimer / PDF
-              </Button>
-              <Button variant="outline" size="sm" onClick={() => setShowPdf(false)}>
-                Fermer
-              </Button>
-            </div>
-          </div>
-          <iframe ref={iframeRef} className="flex-1 w-full border-0" title="Rapport PDF" />
         </div>
       )}
 
