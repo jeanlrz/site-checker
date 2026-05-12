@@ -439,6 +439,7 @@ export default function Home() {
 
   const confirmLeave = () => {
     setShowConfirm(false);
+    try { sessionStorage.removeItem("last-scan"); } catch { /* ignore */ }
     pendingActionRef.current?.();
     pendingActionRef.current = null;
   };
