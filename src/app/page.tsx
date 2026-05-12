@@ -500,7 +500,7 @@ export default function Home() {
               src="/logo.png"
               alt="Com d'Artisans"
               className="h-10 cursor-pointer"
-              onClick={() => askConfirm(() => { window.location.hash = ""; window.location.reload(); })}
+              onClick={() => askConfirm(handleReset)}
             />
             <div className="w-px h-6 bg-border self-center" />
             <div className="flex flex-col items-start">
@@ -518,7 +518,7 @@ export default function Home() {
               <Button variant="outline" size="sm" onClick={() => { setResults(null); setError(""); setExpandedChecks(new Set()); window.location.hash = ""; handleScan(); }} className="text-brand border-brand/30 hover:bg-brand/5">
                 <RotateCcw className="w-3 h-3 mr-1" />Rescanner
               </Button>
-              <Button variant="ghost" size="sm" onClick={() => askConfirm(() => { handleReset(); window.location.hash = ""; })} className="text-muted-foreground">
+              <Button variant="ghost" size="sm" onClick={() => askConfirm(handleReset)} className="text-muted-foreground">
                 Nouveau scan
               </Button>
             </div>
@@ -532,7 +532,7 @@ export default function Home() {
               src="/logo.png"
               alt="Com d'Artisans"
               className="h-9 cursor-pointer"
-              onClick={() => askConfirm(() => { window.location.hash = ""; window.location.reload(); })}
+              onClick={() => askConfirm(handleReset)}
             />
             <span className="text-sm font-medium text-muted-foreground">Site Checker</span>
             {(results || isScanning) && url && (
@@ -544,7 +544,7 @@ export default function Home() {
               <Button variant="outline" size="sm" onClick={() => { setResults(null); setError(""); setExpandedChecks(new Set()); window.location.hash = ""; handleScan(); }} className="w-full text-brand border-brand/30">
                 <RotateCcw className="w-3 h-3 mr-1" />Rescanner
               </Button>
-              <Button variant="ghost" size="sm" onClick={() => askConfirm(() => { handleReset(); window.location.hash = ""; })} className="w-full text-muted-foreground">
+              <Button variant="ghost" size="sm" onClick={() => askConfirm(handleReset)} className="w-full text-muted-foreground">
                 Nouveau scan
               </Button>
             </div>
