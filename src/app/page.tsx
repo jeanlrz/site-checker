@@ -20,7 +20,6 @@ import {
   ChevronDown,
   ChevronRight,
   RotateCcw,
-  Download,
   FileText,
   Info,
 } from "lucide-react";
@@ -133,188 +132,6 @@ function weightedScore(categories: CategoryResult[]): number {
   }
   if (totalWeight === 0) return 0;
   return Math.round((okWeight / totalWeight) * 100);
-}
-
-async function exportToDocx(
-  categories: CategoryResult[],
-  siteUrl: string,
-  scanInfo: { totalPages: number; duration: number },
-): Promise<void> {
-  const { Document, Packer, Paragraph, TextRun, ExternalHyperlink, InternalHyperlink, Bookmark, UnderlineType, BorderStyle } = await import("docx");
-
-  const FONT = "Roboto";
-  const date = new Date().toLocaleDateString("fr-FR", { day: "2-digit", month: "long", year: "numeric" });
-  const score = weightedScore(categories);
-
-  const C = { brand: "2D6E53", green: "16a34a", amber: "d97706", red: "dc2626", gray: "9CA3AF", dark: "1F2937", light: "F3F4F6" };
-  const sCol = (s: string) => s === "success" ? C.green : s === "warning" ? C.amber : C.red;
-  const sLabel = (s: string) => s === "success" ? "✓" : s === "warning" ? "⚠" : "✗";
-  const scoreCol = score >= 80 ? C.green : score >= 50 ? C.amber : C.red;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const run = (text: string, opts: any = {}) => new TextRun({ text, font: FONT, ...opts });
-
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const children: any[] = [];
-
-  // ── En-tête ──
-  children.push(new Paragraph({
-    children: [run("Rapport d’audit", { bold: true, size: 64, color: C.brand })],
-    spacing: { after: 100 },
-  }));
-  children.push(new Paragraph({
-    children: [
-      new ExternalHyperlink({
-        link: siteUrl.startsWith("http") ? siteUrl : `https://${siteUrl}`,
-        children: [run(siteUrl, { size: 32, color: C.brand, underline: { type: UnderlineType.SINGLE } })],
-      }),
-    ],
-    spacing: { after: 80 },
-  }));
-  children.push(new Paragraph({
-    children: [run(`${scanInfo.totalPages} page${scanInfo.totalPages > 1 ? "s" : ""} analysée${scanInfo.totalPages > 1 ? "s" : ""} · ${date}`, { size: 24, color: C.gray })],
-    spacing: { after: 100 },
-  }));
-  children.push(new Paragraph({
-    children: [
-      run("Score global  ", { size: 26, color: C.dark }),
-      run(`${score} / 100`, { size: 34, bold: true, color: scoreCol }),
-    ],
-    spacing: { after: 600 },
-    border: { bottom: { style: BorderStyle.SINGLE, size: 4, color: "E5E7EB" } },
-  }));
-
-  // ── Récapitulatif / Table des matières ──
-  children.push(new Paragraph({
-    children: [run("Récapitulatif des problèmes", { bold: true, size: 30, color: C.brand })],
-    spacing: { before: 200, after: 180 },
-    border: { bottom: { style: BorderStyle.SINGLE, size: 2, color: "E5E7EB" } },
-  }));
-
-  for (const cat of categories) {
-    const failedChecks = [...cat.checks]
-      .filter(c => c.severity !== "success")
-      .sort((a, b) => {
-        const o: Record<string, number> = { error: 0, warning: 1, info: 2, success: 3 };
-        return (o[a.severity] ?? 3) - (o[b.severity] ?? 3);
-      });
-    if (failedChecks.length === 0) continue;
-
-    children.push(new Paragraph({
-      children: [
-        new InternalHyperlink({
-          anchor: `cat-${cat.id}`,
-          children: [run(cat.label, { size: 24, bold: true, color: C.brand, underline: { type: UnderlineType.SINGLE } })],
-        }),
-        run(`   ${failedChecks.length} problème${failedChecks.length > 1 ? "s" : ""}`, { size: 22, color: C.gray }),
-      ],
-      spacing: { before: 180, after: 60 },
-    }));
-
-    for (const check of failedChecks) {
-      children.push(new Paragraph({
-        children: [
-          run(`${sLabel(check.severity)}  `, { size: 22, bold: true, color: sCol(check.severity) }),
-          run(check.label, { size: 22, color: C.dark }),
-          run(`  (${check.count})`, { size: 20, color: C.gray }),
-        ],
-        indent: { left: 400 },
-        spacing: { before: 30, after: 30 },
-      }));
-    }
-  }
-
-  children.push(new Paragraph({
-    children: [],
-    spacing: { before: 500, after: 0 },
-    border: { bottom: { style: BorderStyle.SINGLE, size: 6, color: C.brand } },
-  }));
-
-  // ── Catégories ──
-  for (const cat of categories) {
-    const issueCount = cat.checks.filter(c => c.severity !== "success").length;
-
-    // Séparateur visuel entre catégories
-    children.push(new Paragraph({ children: [], spacing: { before: 0, after: 0 }, pageBreakBefore: false }));
-
-    // Titre catégorie avec bookmark (pour liens internes)
-    children.push(new Paragraph({
-      children: [
-        new Bookmark({
-          id: `cat-${cat.id}`,
-          children: [run(cat.label.toUpperCase(), { bold: true, size: 28, color: C.brand, characterSpacing: 40 })],
-        }),
-        run(issueCount > 0 ? `   ${issueCount} problème${issueCount > 1 ? "s" : ""}` : "   Tout est OK", { size: 24, color: C.gray }),
-      ],
-      spacing: { before: 800, after: 180 },
-      border: { bottom: { style: BorderStyle.SINGLE, size: 4, color: "E5E7EB" } },
-    }));
-
-    const sorted = [...cat.checks].sort((a, b) => {
-      const o: Record<string, number> = { error: 0, warning: 1, info: 2, success: 3 };
-      return (o[a.severity] ?? 3) - (o[b.severity] ?? 3);
-    });
-
-    for (const check of sorted) {
-      children.push(new Paragraph({
-        children: [
-          run(sLabel(check.severity) + "  ", { size: 24, bold: true, color: sCol(check.severity) }),
-          run(check.label, { size: 24, bold: false, color: C.dark }),
-          ...(check.count > 0 ? [run(`  (${check.count})`, { size: 22, color: C.gray })] : []),
-        ],
-        spacing: { before: 220, after: 80 },
-      }));
-
-      // Items avec liens cliquables
-      for (const item of check.items.slice(0, 40)) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const runs: any[] = [];
-        if (item.page?.startsWith("http")) {
-          runs.push(new ExternalHyperlink({
-            link: item.page,
-            children: [run(shortUrl(item.page), { size: 22, color: C.brand, underline: { type: UnderlineType.SINGLE } })],
-          }));
-          runs.push(run("   ", { size: 22 }));
-        }
-        runs.push(run(item.detail, { size: 22, color: C.gray }));
-        children.push(new Paragraph({ children: runs, indent: { left: 440 }, spacing: { after: 40 } }));
-      }
-      if (check.items.length > 40) {
-        children.push(new Paragraph({
-          children: [run(`… et ${check.items.length - 40} autres`, { size: 20, color: C.gray, italics: true })],
-          indent: { left: 440 },
-          spacing: { after: 40 },
-        }));
-      }
-    }
-  }
-
-  // ── Pied de page ──
-  children.push(new Paragraph({
-    children: [run("Audit réalisé par Com d’Artisans — Site Checker", { size: 18, color: C.gray, italics: true })],
-    spacing: { before: 800 },
-    border: { top: { style: BorderStyle.SINGLE, size: 2, color: "E5E7EB" } },
-  }));
-
-  const doc = new Document({
-    creator: "Site Checker — Com d’Artisans",
-    title: `Rapport d’audit — ${siteUrl}`,
-    styles: {
-      default: {
-        document: { run: { font: FONT, size: 22, color: C.dark } },
-      },
-    },
-    sections: [{ children }],
-  });
-
-  const blob = await Packer.toBlob(doc);
-  const objUrl = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = objUrl;
-  a.download = `audit-${siteUrl.replace(/[^a-z0-9]/gi, "-")}.docx`;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(objUrl);
 }
 
 function escHtml(s: string): string {
@@ -490,7 +307,6 @@ export default function Home() {
   const [history, setHistory] = useState<string[]>([]);
   const [scannedPages, setScannedPages] = useState<string[]>([]);
   const [showPages, setShowPages] = useState(false);
-  const [isExporting, setIsExporting] = useState(false);
   const [isExportingPdf, setIsExportingPdf] = useState(false);
   const [siteLogoUrl, setSiteLogoUrl] = useState("");
   const abortRef = useRef<AbortController | null>(null);
@@ -686,9 +502,6 @@ export default function Home() {
           </div>
           {results && (
             <div className="absolute right-6 flex items-center gap-2">
-              <Button variant="outline" size="sm" disabled={isExporting} onClick={async () => { setIsExporting(true); try { await exportToDocx(results, scanUrl || url.replace(/^https?:\/\//, "").replace(/\/$/, ""), scanInfo); } finally { setIsExporting(false); } }} className="text-muted-foreground border-border/60 hover:bg-muted/50">
-                <Download className="w-3 h-3 mr-1" />{isExporting ? "Génération…" : "Google Docs"}
-              </Button>
               <Button variant="outline" size="sm" disabled={isExportingPdf} onClick={() => { setIsExportingPdf(true); try { exportToPdf(results, scanUrl || url.replace(/^https?:\/\//, "").replace(/\/$/, ""), scanInfo); } finally { setIsExportingPdf(false); } }} className="text-muted-foreground border-border/60 hover:bg-muted/50">
                 <FileText className="w-3 h-3 mr-1" />{isExportingPdf ? "Génération…" : "PDF"}
               </Button>
@@ -827,16 +640,6 @@ export default function Home() {
                   )}
                   <p className="text-sm font-semibold text-brand truncate group-hover:underline">{scanUrl || url.replace(/^https?:\/\//, "").replace(/\/$/, "")}</p>
                 </a>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  disabled={isExporting}
-                  onClick={async () => { setIsExporting(true); try { await exportToDocx(results, scanUrl || url.replace(/^https?:\/\//, "").replace(/\/$/, ""), scanInfo); } finally { setIsExporting(false); } }}
-                  className="sm:hidden mb-2 text-muted-foreground border-border/60"
-                >
-                  <Download className="w-3 h-3 mr-1" />
-                  {isExporting ? "Génération…" : "Google Docs"}
-                </Button>
                 <Button
                   variant="outline"
                   size="sm"
