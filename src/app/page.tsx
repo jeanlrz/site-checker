@@ -213,9 +213,9 @@ function exportToPdf(
   body { font-family:'Jost',sans-serif; color:#1F2937; font-size:13px; line-height:1.6; padding:14mm 16mm; background:#fff; }
   .header { border-bottom:2px solid #2D6E53; padding-bottom:12px; margin-bottom:24px; display:flex; justify-content:space-between; align-items:flex-end; }
   .header h1 { font-size:28px; font-weight:700; color:#2D6E53; }
-  .header-meta { font-size:11px; color:#9CA3AF; margin-top:4px; }
+  .header-meta { font-size:11px; color:#9CA3AF; margin-top:6px; }
   .header-right { text-align:right; }
-  .site { font-size:14px; font-weight:600; color:#2D6E53; }
+  .site { font-size:22px; font-weight:700; color:#2D6E53; letter-spacing:-0.3px; margin-top:2px; }
   .score-label { font-size:11px; color:#9CA3AF; }
   .score { font-size:26px; font-weight:700; color:${scoreCol}; }
   .summary { margin-bottom:24px; }
