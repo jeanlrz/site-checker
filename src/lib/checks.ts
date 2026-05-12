@@ -189,8 +189,8 @@ function checkSeo(pages: PageData[]): CategoryResult {
     if (!title) {
       missingTitle.push({ page: page.url, detail: "Balise <title> manquante" });
     } else {
-      if (title.length > 60) {
-        longTitle.push({ page: page.url, detail: `${title.length} caractères: "${title.slice(0, 70)}…"` });
+      if (title.length > 80) {
+        longTitle.push({ page: page.url, detail: `${title.length} caractères: "${title.slice(0, 85)}…"` });
       }
       // Pages noindex exclues des doublons (non indexées par Google, faux positifs WooCommerce fréquents)
       if (!isNoIndex) {
@@ -255,7 +255,7 @@ function checkSeo(pages: PageData[]): CategoryResult {
     make("missing-h1", "seo", "Pages sans H1", missingH1),
     make("multiple-h1", "seo", "Pages avec plusieurs H1", multipleH1),
     make("duplicate-titles", "seo", "Titre identique sur plusieurs pages", duplicateTitles),
-    make("long-title", "seo", "Titles trop longs (>60 car.)", longTitle),
+    make("long-title", "seo", "Titres SEO trop longs (>80 car.)", longTitle),
     make("long-desc", "seo", "Meta descriptions trop longues (>156 car.)", longDesc),
     make("heading-hierarchy", "seo", "Hiérarchie des titres incorrecte (H1→H3…)", headingHierarchy),
     { ...make("missing-featured-image", "seo", "Pages sans image de mise en avant", missingFeaturedImage), tooltip: "L'image de mise en avant (og:image) s'affiche lors du partage sur les réseaux sociaux. Elle est généralement définie via la vignette de l'article dans WordPress." },
@@ -552,10 +552,24 @@ function checkBreadcrumbPresence(pages: PageData[], baseUrl: string): CheckResul
 
   const hasBreadcrumb = (page: PageData) => {
     const $ = cheerio.load(page.html);
-    if ($('.yoast-breadcrumb, .breadcrumb, [class*="breadcrumb"], .woocommerce-breadcrumb, [aria-label*="breadcrumb" i]').length > 0) return true;
+    // Require at least 1 link inside the breadcrumb element to avoid false positives
+    const selectors = [
+      ".yoast-breadcrumb",
+      ".woocommerce-breadcrumb",
+      'nav[aria-label*="breadcrumb" i]',
+      '[class="breadcrumb"]',
+      '[class*=" breadcrumb "]',
+      '[id="breadcrumb"]',
+    ];
+    for (const sel of selectors) {
+      const el = $(sel).first();
+      if (el.length > 0 && el.find("a").length >= 1) return true;
+    }
+    // JSON-LD BreadcrumbList with at least 2 items
     let found = false;
     $('script[type="application/ld+json"]').each((_, el) => {
-      if (($(el).html() || "").includes("BreadcrumbList")) found = true;
+      const json = $(el).html() || "";
+      if (json.includes("BreadcrumbList") && (json.match(/"item"/g) || []).length >= 2) found = true;
     });
     return found;
   };
@@ -576,10 +590,26 @@ function checkPluginsList(pages: PageData[]): CheckResult {
 
   for (const page of pages) {
     if (!page.html || !isHtmlPage(page)) continue;
-    for (const match of page.html.matchAll(/\/wp-content\/plugins\/([a-z0-9_-]+)\//gi)) {
+    // Match /wp-content/plugins/name/ in any URL format (https://, //, relative)
+    for (const match of page.html.matchAll(/wp-content\/plugins\/([a-zA-Z0-9_-]+)\//g)) {
       const name = match[1].toLowerCase();
       if (!pluginMap.has(name)) pluginMap.set(name, page.url);
     }
+    // Also detect via WordPress script/style handle IDs: id="plugin-name-js" or id="plugin-name-css"
+    const $ = cheerio.load(page.html);
+    $("script[id], link[id][rel='stylesheet']").each((_, el) => {
+      const id = $(el).attr("id") || "";
+      // Strip standard WordPress suffixes
+      const slug = id.replace(/-(js|css|js-extra|css-extra|rtl|min)$/i, "");
+      // Only add if it looks like a plugin slug and isn't a core WP handle
+      if (slug.length > 2 && !slug.startsWith("wp-") && !slug.startsWith("jquery") && !slug.startsWith("admin") && !pluginMap.has(slug.toLowerCase())) {
+        // Only include if it matches a known wp-content/plugins path already seen OR is in a plugin src
+        const src = $(el).attr("src") || $(el).attr("href") || "";
+        if (src.includes("wp-content/plugins/")) {
+          pluginMap.set(slug.toLowerCase(), page.url);
+        }
+      }
+    });
   }
 
   if (pluginMap.size === 0) {

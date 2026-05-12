@@ -491,35 +491,10 @@ export default function Home() {
                   autoCapitalize="none"
                   autoCorrect="off"
                   spellCheck={false}
-                  onChange={(e) => { setUrl(e.target.value); setShowSuggestions(true); }}
-                  onKeyDown={(e) => { if (e.key === "Enter") { setShowSuggestions(false); handleScan(); } if (e.key === "Escape") setShowSuggestions(false); }}
-                  onFocus={() => setShowSuggestions(true)}
-                  onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
+                  onChange={(e) => setUrl(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === "Enter") handleScan(); }}
                   className="w-full h-12 px-4 rounded-xl border border-border bg-white text-base focus:outline-none focus:ring-2 focus:ring-brand/50 focus:border-brand transition-all"
                 />
-                {showSuggestions && history.filter(h => h.includes(url.replace(/^https?:\/\//, "").replace(/\/$/, ""))).length > 0 && (
-                  <ul className="absolute z-50 top-full left-0 right-0 mt-1 bg-white border border-border rounded-xl shadow-lg overflow-hidden">
-                    {history.filter(h => h.includes(url.replace(/^https?:\/\//, "").replace(/\/$/, ""))).slice(0, 8).map(h => (
-                      <li key={h} className="flex items-center justify-between px-4 py-2.5 hover:bg-brand/5 group">
-                        <span
-                          onMouseDown={() => { setUrl(h); setShowSuggestions(false); }}
-                          className="flex-1 text-sm font-mono cursor-pointer text-foreground group-hover:text-brand transition-colors truncate"
-                        >{h}</span>
-                        <button
-                          onMouseDown={(e) => {
-                            e.preventDefault();
-                            setHistory(prev => {
-                              const updated = prev.filter(x => x !== h);
-                              try { localStorage.setItem("scan-history", JSON.stringify(updated)); } catch { /* ignore */ }
-                              return updated;
-                            });
-                          }}
-                          className="ml-2 text-muted-foreground hover:text-red-500 transition-colors shrink-0"
-                        >✕</button>
-                      </li>
-                    ))}
-                  </ul>
-                )}
               </div>
               <Button
                 onClick={handleScan}
