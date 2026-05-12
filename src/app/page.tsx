@@ -251,10 +251,10 @@ function exportToPdf(
 <div class="header">
   <div>
     <h1>Rapport d'audit</h1>
+    <div class="site">${siteUrl}</div>
     <div class="header-meta">${scanInfo.totalPages} page${scanInfo.totalPages > 1 ? "s" : ""} analysée${scanInfo.totalPages > 1 ? "s" : ""} · ${date}</div>
   </div>
   <div class="header-right">
-    <div class="site">${siteUrl}</div>
     <div class="score-label">Score global</div>
     <div class="score">${score}<span style="font-size:16px;color:#9CA3AF"> /100</span></div>
   </div>
