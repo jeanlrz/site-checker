@@ -22,7 +22,7 @@ export async function runAllChecks(pages: PageData[], baseUrl: string): Promise<
   const categories: CategoryResult[] = [];
   categories.push(checkBrokenLinks(deduped, baseUrl));
   categories.push(checkImages(deduped));
-  categories.push(checkSeo(deduped));
+  categories.push(checkSeo(deduped, baseUrl));
   categories.push(checkTechnical(deduped, baseUrl));
   categories.push(checkPerformance(deduped));
   categories.push(await checkRequiredPages(deduped, baseUrl));
@@ -165,7 +165,7 @@ function isHtmlPage(page: PageData): boolean {
 }
 
 // ─── 3. SEO ─────────────────────────────────────────────────────
-function checkSeo(pages: PageData[]): CategoryResult {
+function checkSeo(pages: PageData[], baseUrl: string): CategoryResult {
   const missingTitle: CheckItem[] = [];
   const missingDesc: CheckItem[] = [];
   const missingH1: CheckItem[] = [];
@@ -259,6 +259,7 @@ function checkSeo(pages: PageData[]): CategoryResult {
     make("long-desc", "seo", "Meta descriptions trop longues (>156 car.)", longDesc),
     make("heading-hierarchy", "seo", "Hiérarchie des titres incorrecte (H1→H3…)", headingHierarchy),
     make("missing-featured-image", "seo", "Pages sans image de mise en avant", missingFeaturedImage),
+    checkBreadcrumbPresence(pages, baseUrl),
   ];
 
   return { id: "seo", label: "SEO", icon: "Search", severity: worstSeverity(checks), checks };
@@ -519,9 +520,6 @@ async function checkRequiredPages(pages: PageData[], baseUrl: string): Promise<C
     });
   }
 
-  // Fil d'ariane
-  checks.push(checkBreadcrumbPresence(pages, baseUrl));
-
   // Page 404 personnalisée
   checks.push(await checkCustom404(baseUrl));
 
@@ -546,7 +544,7 @@ function checkBreadcrumbPresence(pages: PageData[], baseUrl: string): CheckResul
   });
 
   if (innerPages.length === 0) {
-    return { id: "breadcrumb", category: "pages", label: "Fil d'ariane", severity: "success", count: 0, items: [] };
+    return { id: "breadcrumb", category: "seo", label: "Fil d'ariane", severity: "success", count: 0, items: [] };
   }
 
   const hasBreadcrumb = (page: PageData) => {
@@ -580,11 +578,11 @@ function checkBreadcrumbPresence(pages: PageData[], baseUrl: string): CheckResul
 
   if (withBreadcrumb.length === 0) {
     const allItems = innerPages.slice(0, 50).map((p) => ({ page: p.url, detail: "Fil d'ariane absent" }));
-    return { id: "breadcrumb", category: "pages", label: "Fil d'ariane", severity: "warning", count: allItems.length, items: allItems };
+    return { id: "breadcrumb", category: "seo", label: "Fil d'ariane", severity: "warning", count: allItems.length, items: allItems };
   }
 
   const missing = innerPages.filter((p) => !withBreadcrumb.includes(p)).slice(0, 20).map((p) => ({ page: p.url, detail: "Fil d'ariane absent" }));
-  return make("breadcrumb", "pages", "Fil d'ariane", missing);
+  return make("breadcrumb", "seo", "Fil d'ariane", missing);
 }
 
 
