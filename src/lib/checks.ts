@@ -258,7 +258,7 @@ function checkSeo(pages: PageData[]): CategoryResult {
     make("long-title", "seo", "Titres SEO trop longs (>80 car.)", longTitle),
     make("long-desc", "seo", "Meta descriptions trop longues (>156 car.)", longDesc),
     make("heading-hierarchy", "seo", "Hiérarchie des titres incorrecte (H1→H3…)", headingHierarchy),
-    { ...make("missing-featured-image", "seo", "Pages sans image de mise en avant", missingFeaturedImage), tooltip: "L'image de mise en avant (og:image) s'affiche lors du partage sur les réseaux sociaux. Elle est généralement définie via la vignette de l'article dans WordPress." },
+    make("missing-featured-image", "seo", "Pages sans image de mise en avant", missingFeaturedImage),
   ];
 
   return { id: "seo", label: "SEO", icon: "Search", severity: worstSeverity(checks), checks };
