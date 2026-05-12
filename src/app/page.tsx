@@ -153,23 +153,14 @@ function exportToPdf(
   let summary = `<div class="summary">
     <div class="summary-title">Récapitulatif des problèmes</div>`;
   for (const cat of categories) {
-    const failedChecks = [...cat.checks]
-      .filter(c => c.severity !== "success")
-      .sort((a, b) => ({ error: 0, warning: 1, info: 2, success: 3 }[a.severity] ?? 3) - ({ error: 0, warning: 1, info: 2, success: 3 }[b.severity] ?? 3));
+    const failedChecks = cat.checks.filter(c => c.severity !== "success");
     if (failedChecks.length === 0) continue;
+    const totalIssues = failedChecks.reduce((sum, c) => sum + c.count, 0);
     summary += `<div class="summary-cat">
-      <a href="#cat-${cat.id}" class="summary-cat-link">${escHtml(cat.label)}
-        <span class="summary-cat-count">${failedChecks.length} problème${failedChecks.length > 1 ? "s" : ""}</span>
-      </a>
-      <div class="summary-checks">`;
-    for (const check of failedChecks) {
-      summary += `<div class="summary-check">
-        <span style="color:${sCol(check.severity)};font-weight:700">${sIcon(check.severity)}</span>
-        <a href="#check-${check.id}" class="summary-check-link">${escHtml(check.label)}</a>
-        <span class="summary-check-count">${check.count}</span>
-      </div>`;
-    }
-    summary += `</div></div>`;
+      <span class="summary-cat-link">${escHtml(cat.label)}
+        <span class="summary-cat-count">${totalIssues} problème${totalIssues > 1 ? "s" : ""}</span>
+      </span>
+    </div>`;
   }
   summary += `</div><div class="summary-sep"></div>`;
 
@@ -229,15 +220,9 @@ function exportToPdf(
   .score { font-size:26px; font-weight:700; color:${scoreCol}; }
   .summary { margin-bottom:24px; }
   .summary-title { font-size:18px; font-weight:700; color:#2D6E53; border-bottom:2px solid #E5E7EB; padding-bottom:8px; margin-bottom:14px; }
-  .summary-cat { margin-bottom:10px; }
-  .summary-cat-link { display:flex; align-items:center; gap:10px; font-size:13px; font-weight:700; color:#2D6E53; text-decoration:none; margin-bottom:4px; }
-  .summary-cat-link:hover { text-decoration:underline; }
+  .summary-cat { margin-bottom:8px; }
+  .summary-cat-link { display:flex; align-items:center; gap:10px; font-size:13px; font-weight:700; color:#2D6E53; }
   .summary-cat-count { font-size:11px; font-weight:500; color:#d97706; background:#FEF3C7; padding:1px 8px; border-radius:10px; }
-  .summary-checks { padding-left:18px; display:flex; flex-direction:column; gap:3px; }
-  .summary-check { display:flex; align-items:center; gap:7px; font-size:12px; }
-  .summary-check-link { color:#1F2937; text-decoration:none; flex:1; }
-  .summary-check-link:hover { text-decoration:underline; color:#2D6E53; }
-  .summary-check-count { font-size:11px; color:#9CA3AF; background:#F3F4F6; padding:1px 6px; border-radius:10px; }
   .summary-sep { border-bottom:3px solid #2D6E53; margin:24px 0 28px; }
   .cat { margin-bottom:28px; }
   .cat-title { display:flex; justify-content:space-between; align-items:baseline; border-bottom:2px solid #E5E7EB; padding-bottom:6px; margin-bottom:10px; }
