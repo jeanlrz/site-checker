@@ -301,6 +301,20 @@ export default function Home() {
       const saved = JSON.parse(localStorage.getItem("scan-history") || "[]");
       if (Array.isArray(saved)) setHistory(saved);
     } catch { /* ignore */ }
+    // Restaurer le dernier scan depuis sessionStorage (survit au refresh)
+    try {
+      const lastScan = sessionStorage.getItem("last-scan");
+      if (lastScan) {
+        const { categories, scanInfo: si, scanUrl: su, siteLogoUrl: logo } = JSON.parse(lastScan);
+        if (categories && si && su) {
+          setResults(categories);
+          setScanInfo(si);
+          setScanUrl(su);
+          setUrl(su);
+          if (logo) setSiteLogoUrl(logo);
+        }
+      }
+    } catch { /* ignore */ }
   }, []);
 
   const toggleCheck = (id: string) => {
@@ -380,6 +394,15 @@ export default function Home() {
                 try { localStorage.setItem("scan-history", JSON.stringify(updated)); } catch { /* ignore */ }
                 return updated;
               });
+              // Sauvegarder pour survie au refresh
+              try {
+                sessionStorage.setItem("last-scan", JSON.stringify({
+                  categories: event.categories,
+                  scanInfo: { totalPages: event.totalPages, duration: event.duration },
+                  scanUrl: resolved,
+                  siteLogoUrl: event.siteLogoUrl || "",
+                }));
+              } catch { /* ignore si trop lourd */ }
               setIsScanning(false);
             } else if (event.type === "error") {
               setError(event.message);
@@ -402,6 +425,7 @@ export default function Home() {
     setError("");
     setUrl("");
     setExpandedChecks(new Set());
+    try { sessionStorage.removeItem("last-scan"); } catch { /* ignore */ }
   };
 
   const [showConfirm, setShowConfirm] = useState(false);
