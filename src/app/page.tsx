@@ -137,52 +137,61 @@ async function exportToDocx(
   siteUrl: string,
   scanInfo: { totalPages: number; duration: number },
 ): Promise<void> {
-  const { Document, Packer, Paragraph, TextRun, HeadingLevel, ExternalHyperlink, UnderlineType } = await import("docx");
+  const { Document, Packer, Paragraph, TextRun, ExternalHyperlink, UnderlineType, BorderStyle } = await import("docx");
 
+  const FONT = "Calibri";
   const date = new Date().toLocaleDateString("fr-FR", { day: "2-digit", month: "long", year: "numeric" });
   const score = weightedScore(categories);
 
-  const C = { brand: "337C5F", green: "16a34a", amber: "d97706", red: "dc2626", gray: "6b7280", dark: "111827" };
+  const C = { brand: "2D6E53", green: "16a34a", amber: "d97706", red: "dc2626", gray: "9CA3AF", dark: "1F2937", light: "F3F4F6" };
   const sCol = (s: string) => s === "success" ? C.green : s === "warning" ? C.amber : C.red;
-  const sLabel = (s: string) => s === "success" ? "✓ OK" : s === "warning" ? "⚠ Attention" : "✗ Problème";
+  const sLabel = (s: string) => s === "success" ? "✓" : s === "warning" ? "⚠" : "✗";
   const scoreCol = score >= 80 ? C.green : score >= 50 ? C.amber : C.red;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const run = (text: string, opts: any = {}) => new TextRun({ text, font: FONT, ...opts });
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const children: any[] = [];
 
   // ── En-tête ──
   children.push(new Paragraph({
-    children: [new TextRun({ text: "Rapport d’audit — Com d’Artisans", bold: true, size: 36, color: C.brand })],
-    spacing: { after: 120 },
-  }));
-  children.push(new Paragraph({
-    children: [
-      new ExternalHyperlink({ link: `https://${siteUrl}`, children: [new TextRun({ text: siteUrl, color: C.brand, underline: { type: UnderlineType.SINGLE }, size: 26, bold: true })] }),
-    ],
+    children: [run("Rapport d’audit", { bold: true, size: 52, color: C.brand })],
     spacing: { after: 80 },
   }));
   children.push(new Paragraph({
-    children: [new TextRun({ text: `${scanInfo.totalPages} page${scanInfo.totalPages > 1 ? "s" : ""} analysée${scanInfo.totalPages > 1 ? "s" : ""} · ${date}`, color: C.gray, size: 20 })],
+    children: [
+      new ExternalHyperlink({
+        link: siteUrl.startsWith("http") ? siteUrl : `https://${siteUrl}`,
+        children: [run(siteUrl, { size: 26, color: C.brand, underline: { type: UnderlineType.SINGLE } })],
+      }),
+    ],
     spacing: { after: 60 },
   }));
   children.push(new Paragraph({
+    children: [run(`${scanInfo.totalPages} page${scanInfo.totalPages > 1 ? "s" : ""} analysée${scanInfo.totalPages > 1 ? "s" : ""} · ${date}`, { size: 20, color: C.gray })],
+    spacing: { after: 80 },
+  }));
+  children.push(new Paragraph({
     children: [
-      new TextRun({ text: "Score global : ", size: 24, bold: true }),
-      new TextRun({ text: `${score}/100`, size: 28, bold: true, color: scoreCol }),
+      run("Score global  ", { size: 22, color: C.dark }),
+      run(`${score} / 100`, { size: 28, bold: true, color: scoreCol }),
     ],
-    spacing: { after: 480 },
+    spacing: { after: 600 },
+    border: { bottom: { style: BorderStyle.SINGLE, size: 4, color: "E5E7EB" } },
   }));
 
   // ── Catégories ──
   for (const cat of categories) {
     const issueCount = cat.checks.filter(c => c.severity !== "success").length;
+
+    // Titre catégorie
     children.push(new Paragraph({
-      heading: HeadingLevel.HEADING_1,
       children: [
-        new TextRun({ text: cat.label, bold: true, size: 28, color: sCol(cat.severity) }),
-        new TextRun({ text: issueCount > 0 ? `  —  ${issueCount} problème${issueCount > 1 ? "s" : ""}` : "  —  OK", color: C.gray, size: 22 }),
+        run(cat.label.toUpperCase(), { bold: true, size: 22, color: C.brand, characterSpacing: 40 }),
+        run(issueCount > 0 ? `   ${issueCount} problème${issueCount > 1 ? "s" : ""}` : "   Tout est OK", { size: 20, color: C.gray }),
       ],
-      spacing: { before: 400, after: 160 },
+      spacing: { before: 520, after: 120 },
+      border: { bottom: { style: BorderStyle.SINGLE, size: 2, color: "E5E7EB" } },
     }));
 
     const sorted = [...cat.checks].sort((a, b) => {
@@ -192,13 +201,12 @@ async function exportToDocx(
 
     for (const check of sorted) {
       children.push(new Paragraph({
-        heading: HeadingLevel.HEADING_2,
         children: [
-          new TextRun({ text: `${sLabel(check.severity)}  `, size: 20, bold: true, color: sCol(check.severity) }),
-          new TextRun({ text: check.label, size: 20, bold: true, color: C.dark }),
-          ...(check.count > 0 ? [new TextRun({ text: `  (${check.count})`, size: 18, color: C.gray })] : []),
+          run(sLabel(check.severity) + "  ", { size: 20, bold: true, color: sCol(check.severity) }),
+          run(check.label, { size: 20, bold: false, color: C.dark }),
+          ...(check.count > 0 ? [run(`  (${check.count})`, { size: 18, color: C.gray })] : []),
         ],
-        spacing: { before: 240, after: 80 },
+        spacing: { before: 200, after: 60 },
       }));
 
       // Items avec liens cliquables
@@ -208,17 +216,17 @@ async function exportToDocx(
         if (item.page?.startsWith("http")) {
           runs.push(new ExternalHyperlink({
             link: item.page,
-            children: [new TextRun({ text: shortUrl(item.page), color: C.brand, underline: { type: UnderlineType.SINGLE }, size: 18 })],
+            children: [run(shortUrl(item.page), { size: 18, color: C.brand, underline: { type: UnderlineType.SINGLE } })],
           }));
-          runs.push(new TextRun({ text: "  ", size: 18 }));
+          runs.push(run("   ", { size: 18 }));
         }
-        runs.push(new TextRun({ text: item.detail, size: 18, color: C.dark }));
-        children.push(new Paragraph({ children: runs, indent: { left: 360 }, spacing: { after: 40 } }));
+        runs.push(run(item.detail, { size: 18, color: C.gray }));
+        children.push(new Paragraph({ children: runs, indent: { left: 400 }, spacing: { after: 30 } }));
       }
       if (check.items.length > 40) {
         children.push(new Paragraph({
-          children: [new TextRun({ text: `… et ${check.items.length - 40} autres`, size: 17, color: C.gray, italics: true })],
-          indent: { left: 360 },
+          children: [run(`… et ${check.items.length - 40} autres`, { size: 17, color: C.gray, italics: true })],
+          indent: { left: 400 },
           spacing: { after: 40 },
         }));
       }
@@ -227,13 +235,19 @@ async function exportToDocx(
 
   // ── Pied de page ──
   children.push(new Paragraph({
-    children: [new TextRun({ text: "Audit réalisé par Com d’Artisans — Site Checker", size: 18, color: C.gray, italics: true })],
-    spacing: { before: 600 },
+    children: [run("Audit réalisé par Com d’Artisans — Site Checker", { size: 18, color: C.gray, italics: true })],
+    spacing: { before: 800 },
+    border: { top: { style: BorderStyle.SINGLE, size: 2, color: "E5E7EB" } },
   }));
 
   const doc = new Document({
     creator: "Site Checker — Com d’Artisans",
     title: `Rapport d’audit — ${siteUrl}`,
+    styles: {
+      default: {
+        document: { run: { font: FONT, size: 22, color: C.dark } },
+      },
+    },
     sections: [{ children }],
   });
 
