@@ -286,29 +286,27 @@ function exportToPdf(
       const o: Record<string, number> = { error: 0, warning: 1, info: 2, success: 3 };
       return (o[a.severity] ?? 3) - (o[b.severity] ?? 3);
     });
-    body += `
-      <div class="cat">
-        <div class="cat-title">
-          <span>${cat.label}</span>
-          <span class="cat-count" style="color:${issueCount > 0 ? "#d97706" : "#16a34a"}">${issueCount > 0 ? `${issueCount} problème${issueCount > 1 ? "s" : ""}` : "Tout est OK"}</span>
-        </div>`;
+    body += `<div class="cat">
+      <div class="cat-title">
+        <span>${cat.label}</span>
+        <span class="cat-count" style="color:${issueCount > 0 ? "#d97706" : "#16a34a"}">${issueCount > 0 ? `${issueCount} problème${issueCount > 1 ? "s" : ""}` : "Tout est OK"}</span>
+      </div>`;
     for (const check of sorted) {
       const col = sCol(check.severity);
-      body += `
-        <div class="check">
-          <div class="check-head">
-            <span class="check-icon" style="color:${col}">${sIcon(check.severity)}</span>
-            <span class="check-label">${check.label}</span>
-            ${check.count > 0 ? `<span class="check-count">${check.count}</span>` : ""}
-          </div>`;
+      body += `<div class="check">
+        <div class="check-head">
+          <span class="check-icon" style="color:${col}">${sIcon(check.severity)}</span>
+          <span class="check-label">${check.label}</span>
+          ${check.count > 0 ? `<span class="check-count">${check.count}</span>` : ""}
+        </div>`;
       if (check.items.length > 0) {
         body += `<div class="items">`;
         for (const item of check.items.slice(0, 40)) {
           body += `<div class="item">`;
           if (item.page?.startsWith("http")) {
-            body += `<a href="${item.page}" class="item-link">${shortUrl(item.page)}</a>`;
+            body += `<a href="${item.page}" target="_blank" class="item-link">${shortUrl(item.page)}</a>`;
           }
-          if (item.detail) body += `<span class="item-detail">${item.detail}</span>`;
+          if (item.detail) body += `<div class="item-detail">${item.detail}</div>`;
           body += `</div>`;
         }
         if (check.items.length > 40) body += `<div class="item-more">… et ${check.items.length - 40} autres</div>`;
@@ -319,36 +317,46 @@ function exportToPdf(
     body += `</div>`;
   }
 
-  const html = `<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8">
+  const html = `<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
 <link href="https://fonts.googleapis.com/css2?family=Jost:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <title>Audit — ${siteUrl}</title>
 <style>
-  *{margin:0;padding:0;box-sizing:border-box}
-  body{font-family:'Jost',sans-serif;color:#1F2937;font-size:11px;line-height:1.5;padding:14mm 16mm;background:#fff}
-  .header{border-bottom:2px solid #2D6E53;padding-bottom:10px;margin-bottom:20px;display:flex;justify-content:space-between;align-items:flex-end}
-  .header h1{font-size:26px;font-weight:700;color:#2D6E53}
-  .header-meta{font-size:10px;color:#9CA3AF;margin-top:4px}
-  .header-right{text-align:right}
-  .header-right .site{font-size:13px;font-weight:600;color:#2D6E53}
-  .header-right .score{font-size:22px;font-weight:700;color:${scoreCol}}
-  .header-right .score-label{font-size:10px;color:#9CA3AF}
-  .cat{margin-bottom:24px;break-inside:avoid}
-  .cat-title{display:flex;justify-content:space-between;align-items:baseline;border-bottom:2px solid #E5E7EB;padding-bottom:5px;margin-bottom:8px}
-  .cat-title span:first-child{font-size:13px;font-weight:700;color:#2D6E53;letter-spacing:0.5px;text-transform:uppercase}
-  .cat-count{font-size:10px;font-weight:500}
-  .check{margin-bottom:10px;padding-left:8px;border-left:2px solid #F3F4F6}
-  .check-head{display:flex;align-items:baseline;gap:6px;margin-bottom:3px}
-  .check-icon{font-size:11px;font-weight:700;min-width:14px}
-  .check-label{font-size:11px;font-weight:600;color:#1F2937;flex:1}
-  .check-count{font-size:10px;color:#9CA3AF;background:#F3F4F6;padding:1px 6px;border-radius:10px}
-  .items{padding-left:20px;margin-top:3px}
-  .item{display:flex;gap:8px;font-size:10px;padding:2px 0;border-bottom:1px solid #F9FAFB;flex-wrap:wrap}
-  .item-link{color:#2D6E53;text-decoration:underline;font-family:monospace;font-size:9.5px;word-break:break-all}
-  .item-detail{color:#6B7280}
-  .item-more{font-size:10px;color:#9CA3AF;font-style:italic;padding-top:2px}
-  .footer{margin-top:20px;border-top:1px solid #E5E7EB;padding-top:8px;font-size:9px;color:#D1D5DB;display:flex;justify-content:space-between}
-  @media print{body{padding:12mm 14mm}-webkit-print-color-adjust:exact;print-color-adjust:exact}
-</style></head><body>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:'Jost',sans-serif; color:#1F2937; font-size:13px; line-height:1.6; padding:14mm 16mm; background:#fff; }
+  .header { border-bottom:2px solid #2D6E53; padding-bottom:12px; margin-bottom:24px; display:flex; justify-content:space-between; align-items:flex-end; }
+  .header h1 { font-size:28px; font-weight:700; color:#2D6E53; }
+  .header-meta { font-size:11px; color:#9CA3AF; margin-top:4px; }
+  .header-right { text-align:right; }
+  .site { font-size:14px; font-weight:600; color:#2D6E53; }
+  .score-label { font-size:11px; color:#9CA3AF; }
+  .score { font-size:26px; font-weight:700; color:${scoreCol}; }
+  .cat { margin-bottom:28px; }
+  .cat-title { display:flex; justify-content:space-between; align-items:baseline; border-bottom:2px solid #E5E7EB; padding-bottom:6px; margin-bottom:10px; }
+  .cat-title span:first-child { font-size:14px; font-weight:700; color:#2D6E53; letter-spacing:0.5px; text-transform:uppercase; }
+  .cat-count { font-size:12px; font-weight:500; }
+  .check { margin-bottom:12px; padding-left:10px; border-left:2px solid #F3F4F6; }
+  .check-head { display:flex; align-items:baseline; gap:7px; margin-bottom:4px; }
+  .check-icon { font-size:12px; font-weight:700; min-width:15px; }
+  .check-label { font-size:13px; font-weight:600; color:#1F2937; flex:1; }
+  .check-count { font-size:11px; color:#9CA3AF; background:#F3F4F6; padding:1px 7px; border-radius:10px; }
+  .items { padding-left:22px; margin-top:4px; }
+  .item { padding:5px 0; border-bottom:1px solid #F3F4F6; }
+  .item:last-child { border-bottom:none; }
+  .item-link { display:block; color:#2D6E53; text-decoration:underline; font-family:monospace; font-size:12px; word-break:break-all; margin-bottom:2px; }
+  .item-detail { font-size:11.5px; color:#6B7280; }
+  .item-more { font-size:11px; color:#9CA3AF; font-style:italic; padding-top:4px; }
+  .footer { margin-top:24px; border-top:1px solid #E5E7EB; padding-top:8px; font-size:10px; color:#D1D5DB; display:flex; justify-content:space-between; }
+  @media print {
+    body { padding:12mm 14mm; }
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+</style>
+</head>
+<body>
 <div class="header">
   <div>
     <h1>Rapport d'audit</h1>
@@ -357,7 +365,7 @@ function exportToPdf(
   <div class="header-right">
     <div class="site">${siteUrl}</div>
     <div class="score-label">Score global</div>
-    <div class="score">${score}<span style="font-size:14px;color:#9CA3AF"> /100</span></div>
+    <div class="score">${score}<span style="font-size:16px;color:#9CA3AF"> /100</span></div>
   </div>
 </div>
 ${body}
@@ -365,13 +373,19 @@ ${body}
   <span>Com d'Artisans — Site Checker</span>
   <span>${siteUrl}</span>
 </div>
-</body></html>`;
+<script>
+  document.fonts.ready.then(function() {
+    setTimeout(function() { window.print(); }, 200);
+  });
+</script>
+</body>
+</html>`;
 
-  const win = window.open("", "_blank");
+  const blob = new Blob([html], { type: "text/html;charset=utf-8" });
+  const blobUrl = URL.createObjectURL(blob);
+  const win = window.open(blobUrl, "_blank");
   if (!win) return;
-  win.document.write(html);
-  win.document.close();
-  win.addEventListener("load", () => { win.focus(); win.print(); });
+  win.addEventListener("unload", () => { URL.revokeObjectURL(blobUrl); });
 }
 
 export default function Home() {
