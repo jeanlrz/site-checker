@@ -591,26 +591,11 @@ function checkPluginsList(pages: PageData[]): CheckResult {
 
   for (const page of pages) {
     if (!page.html || !isHtmlPage(page)) continue;
-    // Match /wp-content/plugins/name/ in any URL format (https://, //, relative)
+    // Detect plugin folder names from any wp-content/plugins/NAME/ URL (https://, // or relative)
     for (const match of page.html.matchAll(/wp-content\/plugins\/([a-zA-Z0-9_-]+)\//g)) {
       const name = match[1].toLowerCase();
       if (!pluginMap.has(name)) pluginMap.set(name, page.url);
     }
-    // Also detect via WordPress script/style handle IDs: id="plugin-name-js" or id="plugin-name-css"
-    const $ = cheerio.load(page.html);
-    $("script[id], link[id][rel='stylesheet']").each((_, el) => {
-      const id = $(el).attr("id") || "";
-      // Strip standard WordPress suffixes
-      const slug = id.replace(/-(js|css|js-extra|css-extra|rtl|min)$/i, "");
-      // Only add if it looks like a plugin slug and isn't a core WP handle
-      if (slug.length > 2 && !slug.startsWith("wp-") && !slug.startsWith("jquery") && !slug.startsWith("admin") && !pluginMap.has(slug.toLowerCase())) {
-        // Only include if it matches a known wp-content/plugins path already seen OR is in a plugin src
-        const src = $(el).attr("src") || $(el).attr("href") || "";
-        if (src.includes("wp-content/plugins/")) {
-          pluginMap.set(slug.toLowerCase(), page.url);
-        }
-      }
-    });
   }
 
   if (pluginMap.size === 0) {
