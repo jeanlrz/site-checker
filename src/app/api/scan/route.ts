@@ -148,7 +148,7 @@ export async function POST(req: NextRequest) {
         const allPages = [...pages, ...extraPages];
 
         // Phase 3: Run checks
-        send({ type: "progress", phase: "Analyse en cours...", pagesScanned: allPages.length, totalPages: allPages.length, currentUrl: "" });
+        send({ type: "progress", phase: "Analyse en cours...", pagesScanned: pages.length, totalPages: pages.length, currentUrl: "" });
 
         const categories = await runAllChecks(allPages, baseUrl);
 
