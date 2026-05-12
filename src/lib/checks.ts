@@ -577,7 +577,8 @@ function checkBreadcrumbPresence(pages: PageData[], baseUrl: string): CheckResul
   const withBreadcrumb = innerPages.filter(hasBreadcrumb);
 
   if (withBreadcrumb.length === 0) {
-    return { id: "breadcrumb", category: "pages", label: "Fil d'ariane", severity: "warning", count: 1, items: [{ page: baseUrl, detail: "Aucun fil d'ariane détecté sur les pages du site" }] };
+    const allItems = innerPages.slice(0, 50).map((p) => ({ page: p.url, detail: "Fil d'ariane absent" }));
+    return { id: "breadcrumb", category: "pages", label: "Fil d'ariane", severity: "warning", count: allItems.length, items: allItems };
   }
 
   const missing = innerPages.filter((p) => !withBreadcrumb.includes(p)).slice(0, 20).map((p) => ({ page: p.url, detail: "Fil d'ariane absent" }));
