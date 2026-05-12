@@ -155,26 +155,26 @@ async function exportToDocx(
 
   // ── En-tête ──
   children.push(new Paragraph({
-    children: [run("Rapport d’audit", { bold: true, size: 52, color: C.brand })],
-    spacing: { after: 80 },
+    children: [run("Rapport d’audit", { bold: true, size: 64, color: C.brand })],
+    spacing: { after: 100 },
   }));
   children.push(new Paragraph({
     children: [
       new ExternalHyperlink({
         link: siteUrl.startsWith("http") ? siteUrl : `https://${siteUrl}`,
-        children: [run(siteUrl, { size: 26, color: C.brand, underline: { type: UnderlineType.SINGLE } })],
+        children: [run(siteUrl, { size: 32, color: C.brand, underline: { type: UnderlineType.SINGLE } })],
       }),
     ],
-    spacing: { after: 60 },
-  }));
-  children.push(new Paragraph({
-    children: [run(`${scanInfo.totalPages} page${scanInfo.totalPages > 1 ? "s" : ""} analysée${scanInfo.totalPages > 1 ? "s" : ""} · ${date}`, { size: 20, color: C.gray })],
     spacing: { after: 80 },
   }));
   children.push(new Paragraph({
+    children: [run(`${scanInfo.totalPages} page${scanInfo.totalPages > 1 ? "s" : ""} analysée${scanInfo.totalPages > 1 ? "s" : ""} · ${date}`, { size: 24, color: C.gray })],
+    spacing: { after: 100 },
+  }));
+  children.push(new Paragraph({
     children: [
-      run("Score global  ", { size: 22, color: C.dark }),
-      run(`${score} / 100`, { size: 28, bold: true, color: scoreCol }),
+      run("Score global  ", { size: 26, color: C.dark }),
+      run(`${score} / 100`, { size: 34, bold: true, color: scoreCol }),
     ],
     spacing: { after: 600 },
     border: { bottom: { style: BorderStyle.SINGLE, size: 4, color: "E5E7EB" } },
@@ -187,10 +187,10 @@ async function exportToDocx(
     // Titre catégorie
     children.push(new Paragraph({
       children: [
-        run(cat.label.toUpperCase(), { bold: true, size: 22, color: C.brand, characterSpacing: 40 }),
-        run(issueCount > 0 ? `   ${issueCount} problème${issueCount > 1 ? "s" : ""}` : "   Tout est OK", { size: 20, color: C.gray }),
+        run(cat.label.toUpperCase(), { bold: true, size: 28, color: C.brand, characterSpacing: 40 }),
+        run(issueCount > 0 ? `   ${issueCount} problème${issueCount > 1 ? "s" : ""}` : "   Tout est OK", { size: 24, color: C.gray }),
       ],
-      spacing: { before: 520, after: 120 },
+      spacing: { before: 560, after: 140 },
       border: { bottom: { style: BorderStyle.SINGLE, size: 2, color: "E5E7EB" } },
     }));
 
@@ -202,11 +202,11 @@ async function exportToDocx(
     for (const check of sorted) {
       children.push(new Paragraph({
         children: [
-          run(sLabel(check.severity) + "  ", { size: 20, bold: true, color: sCol(check.severity) }),
-          run(check.label, { size: 20, bold: false, color: C.dark }),
-          ...(check.count > 0 ? [run(`  (${check.count})`, { size: 18, color: C.gray })] : []),
+          run(sLabel(check.severity) + "  ", { size: 24, bold: true, color: sCol(check.severity) }),
+          run(check.label, { size: 24, bold: false, color: C.dark }),
+          ...(check.count > 0 ? [run(`  (${check.count})`, { size: 22, color: C.gray })] : []),
         ],
-        spacing: { before: 200, after: 60 },
+        spacing: { before: 220, after: 80 },
       }));
 
       // Items avec liens cliquables
@@ -216,17 +216,17 @@ async function exportToDocx(
         if (item.page?.startsWith("http")) {
           runs.push(new ExternalHyperlink({
             link: item.page,
-            children: [run(shortUrl(item.page), { size: 18, color: C.brand, underline: { type: UnderlineType.SINGLE } })],
+            children: [run(shortUrl(item.page), { size: 22, color: C.brand, underline: { type: UnderlineType.SINGLE } })],
           }));
-          runs.push(run("   ", { size: 18 }));
+          runs.push(run("   ", { size: 22 }));
         }
-        runs.push(run(item.detail, { size: 18, color: C.gray }));
-        children.push(new Paragraph({ children: runs, indent: { left: 400 }, spacing: { after: 30 } }));
+        runs.push(run(item.detail, { size: 22, color: C.gray }));
+        children.push(new Paragraph({ children: runs, indent: { left: 440 }, spacing: { after: 40 } }));
       }
       if (check.items.length > 40) {
         children.push(new Paragraph({
-          children: [run(`… et ${check.items.length - 40} autres`, { size: 17, color: C.gray, italics: true })],
-          indent: { left: 400 },
+          children: [run(`… et ${check.items.length - 40} autres`, { size: 20, color: C.gray, italics: true })],
+          indent: { left: 440 },
           spacing: { after: 40 },
         }));
       }
