@@ -25,7 +25,8 @@ export async function runAllChecks(pages: PageData[], baseUrl: string): Promise<
   categories.push(checkSeo(deduped));
   categories.push(checkTechnical(deduped, baseUrl));
   categories.push(checkPerformance(deduped));
-  categories.push(checkRequiredPages(deduped, baseUrl));
+  categories.push(await checkRequiredPages(deduped, baseUrl));
+  categories.push(await checkWordPress(deduped, baseUrl));
 
   return categories;
 }
@@ -127,7 +128,7 @@ function checkImages(pages: PageData[]): CategoryResult {
         const noAltKey = resourceUrl || srcShort;
         if (!seenNoAlt.has(noAltKey)) {
           seenNoAlt.add(noAltKey);
-          noAlt.push({ page: page.url, element: `<img src="${srcShort}">`, detail: "Texte alternatif manquant", resourceUrl });
+          noAlt.push({ page: resourceUrl || srcShort, detail: "Texte alternatif manquant" });
         }
       }
 
@@ -138,7 +139,7 @@ function checkImages(pages: PageData[]): CategoryResult {
         const key = resourceUrl || srcClean;
         if (!seenNotWebp.has(key)) {
           seenNotWebp.add(key);
-          notWebp.push({ page: page.url, element: `<img src="${srcShort}">`, detail: "Format non WebP", resourceUrl });
+          notWebp.push({ page: resourceUrl || srcShort, detail: "Format non WebP" });
         }
       }
     });
@@ -172,6 +173,8 @@ function checkSeo(pages: PageData[]): CategoryResult {
   const duplicateTitles: CheckItem[] = [];
   const longTitle: CheckItem[] = [];
   const longDesc: CheckItem[] = [];
+  const headingHierarchy: CheckItem[] = [];
+  const missingFeaturedImage: CheckItem[] = [];
 
   const titles = new Map<string, string[]>();
 
@@ -214,6 +217,28 @@ function checkSeo(pages: PageData[]): CategoryResult {
     } else if (h1s.length > 1) {
       multipleH1.push({ page: page.url, detail: `${h1s.length} H1 trouvés` });
     }
+
+    // Heading hierarchy: no level should be skipped (e.g. H1 → H3 without H2)
+    const headings: { level: number; text: string }[] = [];
+    $("h1,h2,h3,h4,h5,h6").each((_, el) => {
+      headings.push({ level: parseInt(el.tagName[1]), text: $(el).text().trim().slice(0, 60) });
+    });
+    let prevLevel = 0;
+    for (const h of headings) {
+      if (prevLevel > 0 && h.level > prevLevel + 1) {
+        headingHierarchy.push({ page: page.url, detail: `H${h.level} après H${prevLevel} — saut de niveau : "${h.text}"` });
+        break;
+      }
+      prevLevel = h.level;
+    }
+
+    // Featured image: og:image should be present on indexable pages
+    if (!isNoIndex) {
+      const ogImage = $('meta[property="og:image"]').attr("content");
+      if (!ogImage) {
+        missingFeaturedImage.push({ page: page.url, detail: "Image de mise en avant absente (og:image manquant)" });
+      }
+    }
   }
 
   for (const [title, urls] of titles) {
@@ -232,6 +257,8 @@ function checkSeo(pages: PageData[]): CategoryResult {
     make("duplicate-titles", "seo", "Titre identique sur plusieurs pages", duplicateTitles),
     make("long-title", "seo", "Titles trop longs (>60 car.)", longTitle),
     make("long-desc", "seo", "Meta descriptions trop longues (>156 car.)", longDesc),
+    make("heading-hierarchy", "seo", "Hiérarchie des titres incorrecte (H1→H3…)", headingHierarchy),
+    { ...make("missing-featured-image", "seo", "Pages sans image de mise en avant", missingFeaturedImage), tooltip: "L'image de mise en avant (og:image) s'affiche lors du partage sur les réseaux sociaux. Elle est généralement définie via la vignette de l'article dans WordPress." },
   ];
 
   return { id: "seo", label: "SEO", icon: "Search", severity: worstSeverity(checks), checks };
@@ -420,7 +447,7 @@ function checkAccessibility(pages: PageData[]): CategoryResult {
 }
 
 // ─── 8. PAGES OBLIGATOIRES ──────────────────────────────────────
-function checkRequiredPages(pages: PageData[], baseUrl: string): CategoryResult {
+async function checkRequiredPages(pages: PageData[], baseUrl: string): Promise<CategoryResult> {
   const requiredPages = [
     {
       id: "mentions-legales",
@@ -439,6 +466,12 @@ function checkRequiredPages(pages: PageData[], baseUrl: string): CategoryResult 
       label: "Politique de cookies",
       slugs: ["politique-de-cookies", "politique-cookies", "cookies", "cookie-policy", "gestion-des-cookies"],
       titles: ["politique de cookies", "gestion des cookies", "cookie"],
+    },
+    {
+      id: "plan-du-site",
+      label: "Plan du site",
+      slugs: ["plan-du-site", "plan-site", "sitemap-page", "plan-du-site-nav", "plan-site-nav", "nav-link"],
+      titles: ["plan du site", "plan de site"],
     },
   ];
 
@@ -486,7 +519,133 @@ function checkRequiredPages(pages: PageData[], baseUrl: string): CategoryResult 
     });
   }
 
+  // Fil d'ariane
+  checks.push(checkBreadcrumbPresence(pages, baseUrl));
+
+  // Page 404 personnalisée
+  checks.push(await checkCustom404(baseUrl));
+
   return { id: "pages", label: "Pages", icon: "FileText", severity: worstSeverity(checks), checks };
+}
+
+// ─── 9. WORDPRESS ───────────────────────────────────────────────
+async function checkWordPress(pages: PageData[], baseUrl: string): Promise<CategoryResult> {
+  const loginResult = await checkLoginUrl(baseUrl);
+
+  const checks: CheckResult[] = [
+    checkPluginsList(pages),
+    loginResult,
+  ];
+
+  return { id: "wordpress", label: "WordPress", icon: "Globe", severity: worstSeverity(checks), checks };
+}
+
+function checkBreadcrumbPresence(pages: PageData[], baseUrl: string): CheckResult {
+  const innerPages = pages.filter((p) => {
+    if (!p.html || !isHtmlPage(p) || p.status >= 400) return false;
+    try { return new URL(p.url).pathname !== "/"; } catch { return false; }
+  });
+
+  if (innerPages.length === 0) {
+    return { id: "breadcrumb", category: "pages", label: "Fil d'ariane", severity: "success", count: 0, items: [] };
+  }
+
+  const hasBreadcrumb = (page: PageData) => {
+    const $ = cheerio.load(page.html);
+    if ($('.yoast-breadcrumb, .breadcrumb, [class*="breadcrumb"], .woocommerce-breadcrumb, [aria-label*="breadcrumb" i]').length > 0) return true;
+    let found = false;
+    $('script[type="application/ld+json"]').each((_, el) => {
+      if (($(el).html() || "").includes("BreadcrumbList")) found = true;
+    });
+    return found;
+  };
+
+  const withBreadcrumb = innerPages.filter(hasBreadcrumb);
+
+  if (withBreadcrumb.length === 0) {
+    return { id: "breadcrumb", category: "pages", label: "Fil d'ariane", severity: "warning", count: 1, items: [{ page: baseUrl, detail: "Aucun fil d'ariane détecté sur les pages du site" }] };
+  }
+
+  const missing = innerPages.filter((p) => !withBreadcrumb.includes(p)).slice(0, 20).map((p) => ({ page: p.url, detail: "Fil d'ariane absent" }));
+  return make("breadcrumb", "pages", "Fil d'ariane", missing);
+}
+
+function checkPluginsList(pages: PageData[]): CheckResult {
+  const FLAGGED = ["envato", "updraftplus", "mainwp-child", "akismet"];
+  const pluginMap = new Map<string, string>();
+
+  for (const page of pages) {
+    if (!page.html || !isHtmlPage(page)) continue;
+    for (const match of page.html.matchAll(/\/wp-content\/plugins\/([a-z0-9_-]+)\//gi)) {
+      const name = match[1].toLowerCase();
+      if (!pluginMap.has(name)) pluginMap.set(name, page.url);
+    }
+  }
+
+  if (pluginMap.size === 0) {
+    return { id: "plugins", category: "wordpress", label: "Plugins installés", severity: "success", count: 0, items: [] };
+  }
+
+  const flagged: CheckItem[] = [];
+  const normal: CheckItem[] = [];
+  for (const [name] of pluginMap) {
+    const isFlagged = FLAGGED.some((f) => name.includes(f));
+    (isFlagged ? flagged : normal).push({ page: "", detail: name, highlight: isFlagged ? "danger" : "success" });
+  }
+
+  return {
+    id: "plugins",
+    category: "wordpress",
+    label: `Plugins installés (${pluginMap.size})`,
+    severity: "success",
+    count: pluginMap.size,
+    items: [...flagged, ...normal],
+  };
+}
+
+async function checkLoginUrl(baseUrl: string): Promise<CheckResult> {
+  const exposed: CheckItem[] = [];
+
+  for (const path of ["/wp-admin", "/wp-login.php"]) {
+    try {
+      const res = await fetch(baseUrl + path, {
+        method: "HEAD",
+        redirect: "follow",
+        signal: AbortSignal.timeout(8000),
+        headers: { "User-Agent": "SiteChecker/1.0 (Com d'Artisans)" },
+      });
+      if (res.status === 200 && (res.url.includes("wp-login") || res.url.includes("wp-admin"))) {
+        exposed.push({ page: baseUrl + path, detail: `${path} est accessible (URL par défaut exposée)` });
+      }
+    } catch { /* timeout / réseau */ }
+  }
+
+  return make("login-url", "wordpress", "URL de connexion sécurisée", exposed);
+}
+
+async function checkCustom404(baseUrl: string): Promise<CheckResult> {
+  const testUrl = baseUrl + "/cette-page-nexiste-pas-sitechecker-test";
+
+  try {
+    const res = await fetch(testUrl, {
+      signal: AbortSignal.timeout(10000),
+      headers: { "User-Agent": "SiteChecker/1.0 (Com d'Artisans)" },
+    });
+    const html = await res.text();
+
+    if (res.status !== 404) {
+      return { id: "custom-404", category: "pages", label: "Page 404 personnalisée", severity: "warning", count: 1, items: [{ page: testUrl, detail: `Le serveur répond ${res.status} au lieu de 404 (soft 404 — mauvais pour le SEO)` }] };
+    }
+
+    const hasDesign = html.includes("elementor") || html.includes("wp-content/themes") || html.length > 5000;
+    if (!hasDesign) {
+      return { id: "custom-404", category: "pages", label: "Page 404 personnalisée", severity: "warning", count: 1, items: [{ page: baseUrl + "/404", detail: "Page 404 sans design personnalisé détecté" }] };
+    }
+
+    return { id: "custom-404", category: "pages", label: "Page 404 personnalisée", severity: "success", count: 0, items: [] };
+  } catch {
+    return { id: "custom-404", category: "pages", label: "Page 404 personnalisée", severity: "warning", count: 1, items: [{ page: testUrl, detail: "Impossible de vérifier la page 404 (délai dépassé)" }] };
+  }
 }
 
 function normalizeForCheck(url: string): string {

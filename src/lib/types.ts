@@ -5,6 +5,7 @@ export interface CheckItem {
   element?: string;
   detail: string;
   resourceUrl?: string;
+  highlight?: "danger" | "success";
 }
 
 export interface CheckResult {

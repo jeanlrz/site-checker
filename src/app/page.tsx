@@ -107,6 +107,16 @@ const CHECK_WEIGHTS: Record<string, number> = {
   // Performance
   "slow-pages": 6,
   "heavy-pages": 5,
+  // SEO — nouveaux
+  "heading-hierarchy": 5,
+  "missing-featured-image": 4,
+  // WordPress
+  "breadcrumb": 4,
+  "login-url": 6,
+  "custom-404": 4,
+  "plugins": 3,
+  // Pages
+  "plan-du-site": 3,
 };
 
 function weightedScore(categories: CategoryResult[]): number {
@@ -530,11 +540,12 @@ export default function Home() {
             <div className="w-full max-w-[85vw] grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 text-sm text-muted-foreground mt-4">
               {[
                 { icon: <Link className="w-5 h-5" />, label: "Liens cassés", desc: "Détecte les liens internes qui pointent vers des pages inexistantes (404) ou des boutons sans lien." },
-                { icon: <Image className="w-5 h-5" />, label: "Images & alts", desc: "Vérifie que toutes les images ont un texte alternatif, détecte les images cassées, trop lourdes et non converties en WebP." },
-                { icon: <Search className="w-5 h-5" />, label: "SEO", desc: "Contrôle les balises title, meta description et H1 — détecte les absences, doublons et textes trop longs (seuils Yoast)." },
-                { icon: <Settings className="w-5 h-5" />, label: "Technique", desc: "Vérifie le favicon, sitemap.xml, robots.txt, le responsive, Lorem ipsum et Google Tag Manager." },
+                { icon: <Image className="w-5 h-5" />, label: "Images & alts", desc: "Liste les images sans texte alternatif et les images non converties en WebP." },
+                { icon: <Search className="w-5 h-5" />, label: "SEO", desc: "Contrôle title, meta description, H1, hiérarchie des titres, image de mise en avant — détecte les absences, doublons et textes trop longs." },
+                { icon: <Settings className="w-5 h-5" />, label: "Technique", desc: "Vérifie le favicon, sitemap.xml, robots.txt, le responsive et Google Tag Manager." },
                 { icon: <Zap className="w-5 h-5" />, label: "Performance", desc: "Détecte les pages trop lourdes ou trop lentes au chargement." },
-                { icon: <FileText className="w-5 h-5" />, label: "Pages", desc: "Vérifie la présence des pages obligatoires : mentions légales, politique de confidentialité et politique de cookies." },
+                { icon: <FileText className="w-5 h-5" />, label: "Pages", desc: "Vérifie mentions légales, confidentialité, cookies, plan du site, fil d'ariane et page 404 personnalisée." },
+                { icon: <Globe className="w-5 h-5" />, label: "WordPress", desc: "Liste les plugins actifs (Envato, UpdraftPlus, MainWP, Akismet signalés) et vérifie l'URL de connexion." },
               ].map((item) => (
                 <div key={item.label} className="flex items-start gap-3 p-4 rounded-xl bg-white border border-border">
                   <div className="text-brand mt-0.5 shrink-0">{item.icon}</div>
@@ -710,17 +721,18 @@ export default function Home() {
 
 function CheckRow({ check, expanded, onToggle }: { check: CheckResult; expanded: boolean; onToggle: () => void }) {
   const isOk = check.severity === "success";
+  const isPlugins = check.id === "plugins";
   const [showAll, setShowAll] = useState(false);
   const [showTooltip, setShowTooltip] = useState(false);
 
   return (
-    <div className={`rounded-lg border ${isOk ? "border-green-100 bg-green-50/50" : "border-border bg-white"}`}>
+    <div className={`rounded-lg border ${isOk && !isPlugins ? "border-green-100 bg-green-50/50" : "border-border bg-white"}`}>
       <button
         onClick={onToggle}
-        disabled={isOk && !check.tooltip}
+        disabled={isOk && !check.tooltip && !isPlugins}
         className="w-full flex items-center gap-3 px-4 py-3 text-left text-sm hover:bg-muted/30 transition-colors disabled:hover:bg-transparent"
       >
-        {severityIcon(check.severity)}
+        {!isPlugins && severityIcon(check.severity)}
         <span className="flex-1 font-medium flex items-center gap-1.5">
           {check.label}
           {check.tooltip && (
@@ -732,12 +744,12 @@ function CheckRow({ check, expanded, onToggle }: { check: CheckResult; expanded:
             </span>
           )}
         </span>
-        {!isOk && (
+        {!isOk && !isPlugins && (
           <Badge variant="outline" className="text-xs">
             {check.count}
           </Badge>
         )}
-        {isOk ? (
+        {isOk && !isPlugins ? (
           <span className="text-xs text-green-600 font-medium">OK</span>
         ) : expanded ? (
           <ChevronDown className="w-4 h-4 text-muted-foreground" />
@@ -752,25 +764,33 @@ function CheckRow({ check, expanded, onToggle }: { check: CheckResult; expanded:
         </div>
       )}
 
-      {expanded && !isOk && check.items.length > 0 && (
+      {expanded && (isPlugins || !isOk) && check.items.length > 0 && (
         <div className="border-t px-4 py-3 space-y-2 bg-muted/20">
-          {(showAll ? [...check.items].sort((a, b) => a.page.localeCompare(b.page)) : [...check.items].sort((a, b) => a.page.localeCompare(b.page)).slice(0, 20)).map((item, i) => (
-            <div key={i} className="flex flex-col sm:flex-row sm:items-start gap-1 text-xs py-1 border-b border-border/40 last:border-0">
-              <a
-                href={item.page}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="font-mono text-brand hover:text-brand-dark hover:underline truncate max-w-xs shrink-0"
-                title={item.page}
-              >
-                {shortUrl(item.page)}
-              </a>
-              {item.element && (
-                item.resourceUrl
-                  ? <a href={item.resourceUrl} target="_blank" rel="noopener noreferrer" className="text-muted-foreground font-mono shrink-0 hover:text-brand hover:underline">{item.element}</a>
-                  : <span className="text-muted-foreground font-mono shrink-0">{item.element}</span>
+          {(showAll ? check.items : check.items.slice(0, 20)).map((item, i) => (
+            <div key={i} className={`flex flex-col sm:flex-row sm:items-start gap-1 text-xs py-1 border-b border-border/40 last:border-0 ${item.highlight === "danger" ? "text-red-600" : item.highlight === "success" ? "text-green-600" : ""}`}>
+              {isPlugins ? (
+                <span className={`font-mono font-medium ${item.highlight === "danger" ? "text-red-600" : "text-green-600"}`}>{item.detail}</span>
+              ) : (
+                <>
+                  {item.page && (
+                    <a
+                      href={item.page}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="font-mono text-brand hover:text-brand-dark hover:underline truncate max-w-xs shrink-0"
+                      title={item.page}
+                    >
+                      {shortUrl(item.page)}
+                    </a>
+                  )}
+                  {item.element && (
+                    item.resourceUrl
+                      ? <a href={item.resourceUrl} target="_blank" rel="noopener noreferrer" className="text-muted-foreground font-mono shrink-0 hover:text-brand hover:underline">{item.element}</a>
+                      : <span className="text-muted-foreground font-mono shrink-0">{item.element}</span>
+                  )}
+                  <span className="text-foreground">{item.detail}</span>
+                </>
               )}
-              <span className="text-foreground">{item.detail}</span>
             </div>
           ))}
           {check.items.length > 20 && !showAll && (
