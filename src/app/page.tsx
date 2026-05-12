@@ -139,7 +139,7 @@ async function exportToDocx(
 ): Promise<void> {
   const { Document, Packer, Paragraph, TextRun, ExternalHyperlink, UnderlineType, BorderStyle } = await import("docx");
 
-  const FONT = "Calibri";
+  const FONT = "Roboto";
   const date = new Date().toLocaleDateString("fr-FR", { day: "2-digit", month: "long", year: "numeric" });
   const score = weightedScore(categories);
 

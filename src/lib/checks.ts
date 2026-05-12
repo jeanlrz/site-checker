@@ -555,10 +555,13 @@ function checkBreadcrumbPresence(pages: PageData[], baseUrl: string): CheckResul
     const selectors = [
       ".yoast-breadcrumb",
       ".woocommerce-breadcrumb",
+      ".rank-math-breadcrumb",
+      ".et_pb_breadcrumbs",
       'nav[aria-label*="breadcrumb" i]',
-      '[class="breadcrumb"]',
-      '[class*=" breadcrumb "]',
-      '[id="breadcrumb"]',
+      'nav[class*="breadcrumb" i]',
+      '[class*="breadcrumb"]',
+      '[class*="breadcrumbs"]',
+      '[id*="breadcrumb"]',
     ];
     for (const sel of selectors) {
       const el = $(sel).first();
