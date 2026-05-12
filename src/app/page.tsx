@@ -317,6 +317,10 @@ async function exportToDocx(
   URL.revokeObjectURL(objUrl);
 }
 
+function escHtml(s: string): string {
+  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+}
+
 function exportToPdf(
   categories: CategoryResult[],
   siteUrl: string,
@@ -337,14 +341,14 @@ function exportToPdf(
       .sort((a, b) => ({ error: 0, warning: 1, info: 2, success: 3 }[a.severity] ?? 3) - ({ error: 0, warning: 1, info: 2, success: 3 }[b.severity] ?? 3));
     if (failedChecks.length === 0) continue;
     summary += `<div class="summary-cat">
-      <a href="#cat-${cat.id}" class="summary-cat-link">${cat.label}
+      <a href="#cat-${cat.id}" class="summary-cat-link">${escHtml(cat.label)}
         <span class="summary-cat-count">${failedChecks.length} problème${failedChecks.length > 1 ? "s" : ""}</span>
       </a>
       <div class="summary-checks">`;
     for (const check of failedChecks) {
       summary += `<div class="summary-check">
         <span style="color:${sCol(check.severity)};font-weight:700">${sIcon(check.severity)}</span>
-        <a href="#check-${check.id}" class="summary-check-link">${check.label}</a>
+        <a href="#check-${check.id}" class="summary-check-link">${escHtml(check.label)}</a>
         <span class="summary-check-count">${check.count}</span>
       </div>`;
     }
@@ -361,7 +365,7 @@ function exportToPdf(
     });
     body += `<div class="cat" id="cat-${cat.id}">
       <div class="cat-title">
-        <span>${cat.label}</span>
+        <span>${escHtml(cat.label)}</span>
         <span class="cat-count" style="color:${issueCount > 0 ? "#d97706" : "#16a34a"}">${issueCount > 0 ? `${issueCount} problème${issueCount > 1 ? "s" : ""}` : "Tout est OK"}</span>
       </div>`;
     for (const check of sorted) {
@@ -369,7 +373,7 @@ function exportToPdf(
       body += `<div class="check" id="check-${check.id}">
         <div class="check-head">
           <span class="check-icon" style="color:${col}">${sIcon(check.severity)}</span>
-          <span class="check-label">${check.label}</span>
+          <span class="check-label">${escHtml(check.label)}</span>
           ${check.count > 0 ? `<span class="check-count">${check.count}</span>` : ""}
         </div>`;
       if (check.items.length > 0) {
@@ -379,7 +383,7 @@ function exportToPdf(
           if (item.page?.startsWith("http")) {
             body += `<a href="${item.page}" target="_blank" class="item-link">${shortUrl(item.page)}</a>`;
           }
-          if (item.detail) body += `<div class="item-detail">${item.detail}</div>`;
+          if (item.detail) body += `<div class="item-detail">${escHtml(item.detail)}</div>`;
           body += `</div>`;
         }
         if (check.items.length > 40) body += `<div class="item-more">… et ${check.items.length - 40} autres</div>`;
