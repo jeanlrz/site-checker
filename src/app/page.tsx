@@ -187,14 +187,17 @@ async function exportToDocx(
   for (const cat of categories) {
     const issueCount = cat.checks.filter(c => c.severity !== "success").length;
 
+    // Séparateur visuel entre catégories
+    children.push(new Paragraph({ children: [], spacing: { before: 0, after: 0 }, pageBreakBefore: false }));
+
     // Titre catégorie
     children.push(new Paragraph({
       children: [
         run(cat.label.toUpperCase(), { bold: true, size: 28, color: C.brand, characterSpacing: 40 }),
         run(issueCount > 0 ? `   ${issueCount} problème${issueCount > 1 ? "s" : ""}` : "   Tout est OK", { size: 24, color: C.gray }),
       ],
-      spacing: { before: 560, after: 140 },
-      border: { bottom: { style: BorderStyle.SINGLE, size: 2, color: "E5E7EB" } },
+      spacing: { before: 800, after: 180 },
+      border: { bottom: { style: BorderStyle.SINGLE, size: 4, color: "E5E7EB" } },
     }));
 
     const sorted = [...cat.checks].sort((a, b) => {
@@ -265,6 +268,112 @@ async function exportToDocx(
   URL.revokeObjectURL(objUrl);
 }
 
+function exportToPdf(
+  categories: CategoryResult[],
+  siteUrl: string,
+  scanInfo: { totalPages: number; duration: number },
+): void {
+  const date = new Date().toLocaleDateString("fr-FR", { day: "2-digit", month: "long", year: "numeric" });
+  const score = weightedScore(categories);
+  const scoreCol = score >= 80 ? "#16a34a" : score >= 50 ? "#d97706" : "#dc2626";
+  const sCol = (s: string) => s === "success" ? "#16a34a" : s === "warning" ? "#d97706" : "#dc2626";
+  const sIcon = (s: string) => s === "success" ? "✓" : s === "warning" ? "⚠" : "✗";
+
+  let body = "";
+  for (const cat of categories) {
+    const issueCount = cat.checks.filter(c => c.severity !== "success").length;
+    const sorted = [...cat.checks].sort((a, b) => {
+      const o: Record<string, number> = { error: 0, warning: 1, info: 2, success: 3 };
+      return (o[a.severity] ?? 3) - (o[b.severity] ?? 3);
+    });
+    body += `
+      <div class="cat">
+        <div class="cat-title">
+          <span>${cat.label}</span>
+          <span class="cat-count" style="color:${issueCount > 0 ? "#d97706" : "#16a34a"}">${issueCount > 0 ? `${issueCount} problème${issueCount > 1 ? "s" : ""}` : "Tout est OK"}</span>
+        </div>`;
+    for (const check of sorted) {
+      const col = sCol(check.severity);
+      body += `
+        <div class="check">
+          <div class="check-head">
+            <span class="check-icon" style="color:${col}">${sIcon(check.severity)}</span>
+            <span class="check-label">${check.label}</span>
+            ${check.count > 0 ? `<span class="check-count">${check.count}</span>` : ""}
+          </div>`;
+      if (check.items.length > 0) {
+        body += `<div class="items">`;
+        for (const item of check.items.slice(0, 40)) {
+          body += `<div class="item">`;
+          if (item.page?.startsWith("http")) {
+            body += `<a href="${item.page}" class="item-link">${shortUrl(item.page)}</a>`;
+          }
+          if (item.detail) body += `<span class="item-detail">${item.detail}</span>`;
+          body += `</div>`;
+        }
+        if (check.items.length > 40) body += `<div class="item-more">… et ${check.items.length - 40} autres</div>`;
+        body += `</div>`;
+      }
+      body += `</div>`;
+    }
+    body += `</div>`;
+  }
+
+  const html = `<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8">
+<link href="https://fonts.googleapis.com/css2?family=Jost:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<title>Audit — ${siteUrl}</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{font-family:'Jost',sans-serif;color:#1F2937;font-size:11px;line-height:1.5;padding:14mm 16mm;background:#fff}
+  .header{border-bottom:2px solid #2D6E53;padding-bottom:10px;margin-bottom:20px;display:flex;justify-content:space-between;align-items:flex-end}
+  .header h1{font-size:26px;font-weight:700;color:#2D6E53}
+  .header-meta{font-size:10px;color:#9CA3AF;margin-top:4px}
+  .header-right{text-align:right}
+  .header-right .site{font-size:13px;font-weight:600;color:#2D6E53}
+  .header-right .score{font-size:22px;font-weight:700;color:${scoreCol}}
+  .header-right .score-label{font-size:10px;color:#9CA3AF}
+  .cat{margin-bottom:24px;break-inside:avoid}
+  .cat-title{display:flex;justify-content:space-between;align-items:baseline;border-bottom:2px solid #E5E7EB;padding-bottom:5px;margin-bottom:8px}
+  .cat-title span:first-child{font-size:13px;font-weight:700;color:#2D6E53;letter-spacing:0.5px;text-transform:uppercase}
+  .cat-count{font-size:10px;font-weight:500}
+  .check{margin-bottom:10px;padding-left:8px;border-left:2px solid #F3F4F6}
+  .check-head{display:flex;align-items:baseline;gap:6px;margin-bottom:3px}
+  .check-icon{font-size:11px;font-weight:700;min-width:14px}
+  .check-label{font-size:11px;font-weight:600;color:#1F2937;flex:1}
+  .check-count{font-size:10px;color:#9CA3AF;background:#F3F4F6;padding:1px 6px;border-radius:10px}
+  .items{padding-left:20px;margin-top:3px}
+  .item{display:flex;gap:8px;font-size:10px;padding:2px 0;border-bottom:1px solid #F9FAFB;flex-wrap:wrap}
+  .item-link{color:#2D6E53;text-decoration:underline;font-family:monospace;font-size:9.5px;word-break:break-all}
+  .item-detail{color:#6B7280}
+  .item-more{font-size:10px;color:#9CA3AF;font-style:italic;padding-top:2px}
+  .footer{margin-top:20px;border-top:1px solid #E5E7EB;padding-top:8px;font-size:9px;color:#D1D5DB;display:flex;justify-content:space-between}
+  @media print{body{padding:12mm 14mm}-webkit-print-color-adjust:exact;print-color-adjust:exact}
+</style></head><body>
+<div class="header">
+  <div>
+    <h1>Rapport d'audit</h1>
+    <div class="header-meta">${scanInfo.totalPages} page${scanInfo.totalPages > 1 ? "s" : ""} analysée${scanInfo.totalPages > 1 ? "s" : ""} · ${date}</div>
+  </div>
+  <div class="header-right">
+    <div class="site">${siteUrl}</div>
+    <div class="score-label">Score global</div>
+    <div class="score">${score}<span style="font-size:14px;color:#9CA3AF"> /100</span></div>
+  </div>
+</div>
+${body}
+<div class="footer">
+  <span>Com d'Artisans — Site Checker</span>
+  <span>${siteUrl}</span>
+</div>
+</body></html>`;
+
+  const win = window.open("", "_blank");
+  if (!win) return;
+  win.document.write(html);
+  win.document.close();
+  win.addEventListener("load", () => { win.focus(); win.print(); });
+}
+
 export default function Home() {
   const [url, setUrl] = useState("");
   const [isScanning, setIsScanning] = useState(false);
@@ -278,6 +387,7 @@ export default function Home() {
   const [scannedPages, setScannedPages] = useState<string[]>([]);
   const [showPages, setShowPages] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
+  const [isExportingPdf, setIsExportingPdf] = useState(false);
   const [siteLogoUrl, setSiteLogoUrl] = useState("");
   const abortRef = useRef<AbortController | null>(null);
 
@@ -473,7 +583,10 @@ export default function Home() {
           {results && (
             <div className="absolute right-6 flex items-center gap-2">
               <Button variant="outline" size="sm" disabled={isExporting} onClick={async () => { setIsExporting(true); try { await exportToDocx(results, scanUrl || url.replace(/^https?:\/\//, "").replace(/\/$/, ""), scanInfo); } finally { setIsExporting(false); } }} className="text-muted-foreground border-border/60 hover:bg-muted/50">
-                <Download className="w-3 h-3 mr-1" />{isExporting ? "Génération…" : "Exporter Google Docs"}
+                <Download className="w-3 h-3 mr-1" />{isExporting ? "Génération…" : "Google Docs"}
+              </Button>
+              <Button variant="outline" size="sm" disabled={isExportingPdf} onClick={() => { setIsExportingPdf(true); try { exportToPdf(results, scanUrl || url.replace(/^https?:\/\//, "").replace(/\/$/, ""), scanInfo); } finally { setIsExportingPdf(false); } }} className="text-muted-foreground border-border/60 hover:bg-muted/50">
+                <FileText className="w-3 h-3 mr-1" />{isExportingPdf ? "Génération…" : "PDF"}
               </Button>
               <Button variant="outline" size="sm" onClick={() => { setResults(null); setError(""); setExpandedChecks(new Set()); window.location.hash = ""; handleScan(); }} className="text-brand border-brand/30 hover:bg-brand/5">
                 <RotateCcw className="w-3 h-3 mr-1" />Rescanner
@@ -618,7 +731,17 @@ export default function Home() {
                   className="sm:hidden mb-2 text-muted-foreground border-border/60"
                 >
                   <Download className="w-3 h-3 mr-1" />
-                  {isExporting ? "Génération…" : "Exporter Google Docs"}
+                  {isExporting ? "Génération…" : "Google Docs"}
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={isExportingPdf}
+                  onClick={() => { setIsExportingPdf(true); try { exportToPdf(results, scanUrl || url.replace(/^https?:\/\//, "").replace(/\/$/, ""), scanInfo); } finally { setIsExportingPdf(false); } }}
+                  className="sm:hidden mb-2 text-muted-foreground border-border/60"
+                >
+                  <FileText className="w-3 h-3 mr-1" />
+                  {isExportingPdf ? "Génération…" : "PDF"}
                 </Button>
                 <h2 className="text-xl font-bold">
                   {globalScore >= 80 ? "Bon travail !" : globalScore >= 50 ? "Des points à corriger" : "Attention, plusieurs problèmes"}
