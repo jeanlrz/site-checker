@@ -533,7 +533,6 @@ async function checkWordPress(pages: PageData[], baseUrl: string): Promise<Categ
   const loginResult = await checkLoginUrl(baseUrl);
 
   const checks: CheckResult[] = [
-    checkPluginsList(pages),
     loginResult,
   ];
 
@@ -585,39 +584,6 @@ function checkBreadcrumbPresence(pages: PageData[], baseUrl: string): CheckResul
   return make("breadcrumb", "pages", "Fil d'ariane", missing);
 }
 
-function checkPluginsList(pages: PageData[]): CheckResult {
-  const FLAGGED = ["envato", "updraftplus", "mainwp-child", "akismet"];
-  const pluginMap = new Map<string, string>();
-
-  for (const page of pages) {
-    if (!page.html || !isHtmlPage(page)) continue;
-    // Detect plugin folder names from any wp-content/plugins/NAME/ URL (https://, // or relative)
-    for (const match of page.html.matchAll(/wp-content\/plugins\/([a-zA-Z0-9_-]+)\//g)) {
-      const name = match[1].toLowerCase();
-      if (!pluginMap.has(name)) pluginMap.set(name, page.url);
-    }
-  }
-
-  if (pluginMap.size === 0) {
-    return { id: "plugins", category: "wordpress", label: "Plugins installés", severity: "success", count: 0, items: [] };
-  }
-
-  const flagged: CheckItem[] = [];
-  const normal: CheckItem[] = [];
-  for (const [name] of pluginMap) {
-    const isFlagged = FLAGGED.some((f) => name.includes(f));
-    (isFlagged ? flagged : normal).push({ page: "", detail: name, highlight: isFlagged ? "danger" : "success" });
-  }
-
-  return {
-    id: "plugins",
-    category: "wordpress",
-    label: `Plugins installés (${pluginMap.size})`,
-    severity: "success",
-    count: pluginMap.size,
-    items: [...flagged, ...normal],
-  };
-}
 
 async function checkLoginUrl(baseUrl: string): Promise<CheckResult> {
   const exposed: CheckItem[] = [];

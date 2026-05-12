@@ -114,7 +114,6 @@ const CHECK_WEIGHTS: Record<string, number> = {
   "breadcrumb": 4,
   "login-url": 6,
   "custom-404": 4,
-  "plugins": 3,
   // Pages
   "plan-du-site": 3,
 };
@@ -197,22 +196,10 @@ async function exportToDocx(
         children: [
           new TextRun({ text: `${sLabel(check.severity)}  `, size: 20, bold: true, color: sCol(check.severity) }),
           new TextRun({ text: check.label, size: 20, bold: true, color: C.dark }),
-          ...(check.count > 0 && check.id !== "plugins" ? [new TextRun({ text: `  (${check.count})`, size: 18, color: C.gray })] : []),
+          ...(check.count > 0 ? [new TextRun({ text: `  (${check.count})`, size: 18, color: C.gray })] : []),
         ],
         spacing: { before: 240, after: 80 },
       }));
-
-      // Plugins : liste colorée
-      if (check.id === "plugins") {
-        for (const item of check.items) {
-          children.push(new Paragraph({
-            children: [new TextRun({ text: `• ${item.detail}`, size: 18, color: item.highlight === "danger" ? C.red : C.green })],
-            indent: { left: 360 },
-            spacing: { after: 40 },
-          }));
-        }
-        continue;
-      }
 
       // Items avec liens cliquables
       for (const item of check.items.slice(0, 40)) {
@@ -555,7 +542,7 @@ export default function Home() {
                 { icon: <Settings className="w-5 h-5" />, label: "Technique", desc: "Vérifie le favicon, sitemap.xml, robots.txt, le responsive et Google Tag Manager." },
                 { icon: <Zap className="w-5 h-5" />, label: "Performance", desc: "Détecte les pages trop lourdes ou trop lentes au chargement." },
                 { icon: <FileText className="w-5 h-5" />, label: "Pages", desc: "Vérifie mentions légales, confidentialité, cookies, plan du site, fil d'ariane et page 404 personnalisée." },
-                { icon: <Globe className="w-5 h-5" />, label: "WordPress", desc: "Liste les plugins actifs (Envato, UpdraftPlus, MainWP, Akismet signalés) et vérifie l'URL de connexion." },
+                { icon: <Globe className="w-5 h-5" />, label: "WordPress", desc: "Vérifie que l'URL de connexion a été sécurisée (wp-login.php masqué)." },
               ].map((item) => (
                 <div key={item.label} className="flex items-start gap-3 p-4 rounded-xl bg-white border border-border">
                   <div className="text-brand mt-0.5 shrink-0">{item.icon}</div>
@@ -715,18 +702,17 @@ export default function Home() {
 
 function CheckRow({ check, expanded, onToggle }: { check: CheckResult; expanded: boolean; onToggle: () => void }) {
   const isOk = check.severity === "success";
-  const isPlugins = check.id === "plugins";
   const [showAll, setShowAll] = useState(false);
   const [showTooltip, setShowTooltip] = useState(false);
 
   return (
-    <div className={`rounded-lg border ${isOk && !isPlugins ? "border-green-100 bg-green-50/50" : "border-border bg-white"}`}>
+    <div className={`rounded-lg border ${isOk ? "border-green-100 bg-green-50/50" : "border-border bg-white"}`}>
       <button
         onClick={onToggle}
-        disabled={isOk && !check.tooltip && !isPlugins}
+        disabled={isOk && !check.tooltip}
         className="w-full flex items-center gap-3 px-4 py-3 text-left text-sm hover:bg-muted/30 transition-colors disabled:hover:bg-transparent"
       >
-        {!isPlugins && severityIcon(check.severity)}
+        {severityIcon(check.severity)}
         <span className="flex-1 font-medium flex items-center gap-1.5">
           {check.label}
           {check.tooltip && (
@@ -738,12 +724,12 @@ function CheckRow({ check, expanded, onToggle }: { check: CheckResult; expanded:
             </span>
           )}
         </span>
-        {!isOk && !isPlugins && (
+        {!isOk && (
           <Badge variant="outline" className="text-xs">
             {check.count}
           </Badge>
         )}
-        {isOk && !isPlugins ? (
+        {isOk ? (
           <span className="text-xs text-green-600 font-medium">OK</span>
         ) : expanded ? (
           <ChevronDown className="w-4 h-4 text-muted-foreground" />
@@ -758,14 +744,11 @@ function CheckRow({ check, expanded, onToggle }: { check: CheckResult; expanded:
         </div>
       )}
 
-      {expanded && (isPlugins || !isOk) && check.items.length > 0 && (
+      {expanded && !isOk && check.items.length > 0 && (
         <div className="border-t px-4 py-3 space-y-2 bg-muted/20">
           {(showAll ? check.items : check.items.slice(0, 20)).map((item, i) => (
             <div key={i} className={`flex flex-col sm:flex-row sm:items-start gap-1 text-xs py-1 border-b border-border/40 last:border-0 ${item.highlight === "danger" ? "text-red-600" : item.highlight === "success" ? "text-green-600" : ""}`}>
-              {isPlugins ? (
-                <span className={`font-mono font-medium ${item.highlight === "danger" ? "text-red-600" : "text-green-600"}`}>{item.detail}</span>
-              ) : (
-                <>
+              <>
                   {item.page && (
                     <a
                       href={item.page}
@@ -784,7 +767,6 @@ function CheckRow({ check, expanded, onToggle }: { check: CheckResult; expanded:
                   )}
                   <span className="text-foreground">{item.detail}</span>
                 </>
-              )}
             </div>
           ))}
           {check.items.length > 20 && !showAll && (
