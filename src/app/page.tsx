@@ -90,14 +90,18 @@ const CHECK_WEIGHTS: Record<string, number> = {
   "politique-confidentialite": 9,
   "politique-cookies": 9,
   // Liens
-  "broken-links": 8,
-  "empty-links": 5,
+  "broken-links": 7,
+  "empty-links": 7,
+  "orphan-pages": 9,
+  "no-external-links": 5,
+  "weak-internal-links": 4,
   // Images
-  "broken-images": 7,
-  "no-alt": 6,
+  "broken-images": 8,
+  "no-alt": 5,
   "large-images": 4,
-  "not-webp": 6,
+  "not-webp": 7,
   // Technique
+  "mixed-content": 10,
   "lorem-ipsum": 9,
   "viewport": 8,
   "no-analytics": 6,
@@ -106,13 +110,12 @@ const CHECK_WEIGHTS: Record<string, number> = {
   "robots": 5,
   // Performance
   "slow-pages": 6,
-  "heavy-pages": 5,
   // SEO — nouveaux
   "heading-hierarchy": 5,
   "missing-featured-image": 4,
   // WordPress
   "breadcrumb": 4,
-  "login-url": 6,
+  "login-url": 3,
   "custom-404": 4,
   // Pages
   "plan-du-site": 3,

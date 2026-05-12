@@ -45,15 +45,28 @@ function make(id: string, category: string, label: string, items: CheckItem[]): 
 // ─── 1. BROKEN LINKS ────────────────────────────────────────────
 function checkBrokenLinks(pages: PageData[], baseUrl: string): CategoryResult {
   const base = new URL(baseUrl);
-  const pageUrls = new Set(pages.map((p) => p.url));
 
   const broken: CheckItem[] = [];
   const empty: CheckItem[] = [];
+  const noExternalLinks: CheckItem[] = [];
+
+  // Build inbound link map for orphan/weak link detection
+  const inboundMap = new Map<string, Set<string>>();
+  const htmlPages = pages.filter((p) => p.html && isHtmlPage(p) && p.status < 400);
+  for (const page of htmlPages) {
+    try {
+      const u = new URL(page.url);
+      if (u.hostname === base.hostname && u.pathname !== "/") {
+        inboundMap.set(normalizeForCheck(page.url), new Set());
+      }
+    } catch { /* ignore */ }
+  }
 
   for (const page of pages) {
     if (!page.html || !isHtmlPage(page)) continue;
     const $ = cheerio.load(page.html);
     const seenThisPage = new Set<string>();
+    let hasExternalLink = false;
 
     $("a[href]").each((_, el) => {
       const href = $(el).attr("href") || "";
@@ -73,11 +86,8 @@ function checkBrokenLinks(pages: PageData[], baseUrl: string): CategoryResult {
         return;
       }
 
-      // Ignore hrefs with spaces (CMS placeholder text used as href, not real URLs)
       if (href.includes(" ")) return;
       try { if (decodeURIComponent(href).includes(" ")) return; } catch { /* ignore */ }
-
-      // Ignore Cloudflare email-protection links (work client-side via JS, always 404 server-side)
       if (href.includes("/cdn-cgi/")) return;
 
       try {
@@ -89,16 +99,44 @@ function checkBrokenLinks(pages: PageData[], baseUrl: string): CategoryResult {
           if (matchingPage && matchingPage.status >= 400) {
             broken.push({ page: page.url, element: `<a>${text}</a>`, detail: `${href} → ${matchingPage.status}` });
           }
+          // Register inbound link (exclude self-links)
+          if (normalizeForCheck(page.url) !== norm && inboundMap.has(norm)) {
+            inboundMap.get(norm)!.add(page.url);
+          }
+        } else {
+          hasExternalLink = true;
         }
       } catch {
         broken.push({ page: page.url, element: `<a>${text}</a>`, detail: `URL invalide: ${href}` });
       }
     });
+
+    // Pages with no external links (only inner pages, not homepage)
+    try {
+      const u = new URL(page.url);
+      if (u.pathname !== "/" && !hasExternalLink && isHtmlPage(page) && page.status < 400) {
+        noExternalLinks.push({ page: page.url, detail: "Aucun lien externe sur cette page" });
+      }
+    } catch { /* ignore */ }
+  }
+
+  // Orphan pages (0 inbound links)
+  const orphanPages: CheckItem[] = [];
+  const weakLinkedPages: CheckItem[] = [];
+  for (const [url, sources] of inboundMap) {
+    if (sources.size === 0) {
+      orphanPages.push({ page: url, detail: "Aucune page ne pointe vers cette page" });
+    } else if (sources.size === 1) {
+      weakLinkedPages.push({ page: url, detail: "Une seule page pointe vers cette page" });
+    }
   }
 
   const checks = [
     make("broken-links", "links", "Liens cassés (404)", broken),
     make("empty-links", "links", "Boutons sans lien (href=\"#\")", empty),
+    make("orphan-pages", "links", "Pages orphelines (aucun lien entrant)", orphanPages),
+    make("weak-internal-links", "links", "Pages peu liées (1 seul lien entrant)", weakLinkedPages),
+    make("no-external-links", "links", "Pages sans lien externe", noExternalLinks),
   ];
 
   return { id: "links", label: "Liens", icon: "Link", severity: worstSeverity(checks), checks };
@@ -344,26 +382,38 @@ function checkTechnical(pages: PageData[], baseUrl: string): CategoryResult {
     });
   }
 
+  // Mixed content (HTTP resources on HTTPS page)
+  if (baseUrl.startsWith("https://")) {
+    const mixedContent: CheckItem[] = [];
+    const seenMixed = new Set<string>();
+    for (const page of pages) {
+      if (!page.html || !isHtmlPage(page)) continue;
+      const $ = cheerio.load(page.html);
+      $("img[src], script[src], link[href], iframe[src], source[src]").each((_, el) => {
+        const url = $(el).attr("src") || $(el).attr("href") || "";
+        if (url.startsWith("http://") && !seenMixed.has(url)) {
+          seenMixed.add(url);
+          mixedContent.push({ page: page.url, detail: `Ressource HTTP : ${url.slice(0, 100)}` });
+        }
+      });
+    }
+    checks.push(make("mixed-content", "technical", "Contenu mixte (HTTP sur HTTPS)", mixedContent));
+  }
+
   return { id: "technical", label: "Technique", icon: "Settings", severity: worstSeverity(checks), checks };
 }
 
 // ─── 5. PERFORMANCE ─────────────────────────────────────────────
 function checkPerformance(pages: PageData[]): CategoryResult {
-  const heavy: CheckItem[] = [];
   const slow: CheckItem[] = [];
 
   for (const page of pages) {
-    const sizeKb = Math.round(page.size / 1024);
-    if (sizeKb > 2000) {
-      heavy.push({ page: page.url, detail: `${sizeKb} Ko (HTML seul)` });
-    }
     if (page.loadTime > 5000) {
       slow.push({ page: page.url, detail: `${(page.loadTime / 1000).toFixed(1)}s de chargement` });
     }
   }
 
   const checks = [
-    make("heavy-pages", "performance", "Pages lourdes (>2 Mo HTML)", heavy),
     make("slow-pages", "performance", "Pages lentes (>5s)", slow),
   ];
 
