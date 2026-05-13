@@ -2,8 +2,10 @@ import type { Metadata } from "next";
 import { Jost } from "next/font/google";
 import "./globals.css";
 
+// Ajout de display: "swap" pour un rendu optimal sans erreur
 const jost = Jost({
   subsets: ["latin"],
+  display: "swap",
 });
 
 export const metadata: Metadata = {
@@ -21,9 +23,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="fr" className={`${jost.className} h-full antialiased`}>
-      <head>
-        <link rel="icon" href="/favicon-officiel.png" type="image/png" />
-      </head>
+      {/* La balise <head> manuelle a été supprimée, Next.js s'occupe du favicon grâce à "metadata" */}
       <body className="min-h-full flex flex-col">{children}</body>
     </html>
   );
