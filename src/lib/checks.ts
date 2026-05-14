@@ -49,8 +49,7 @@ function checkBrokenLinks(pages: PageData[], baseUrl: string): CategoryResult {
   const broken: CheckItem[] = [];
   const empty: CheckItem[] = [];
   const noExternalLinks: CheckItem[] = [];
-  const httpLinks: CheckItem[] = [];
-  const seenHttpLinks = new Set<string>();
+  const httpLinksMap = new Map<string, number>(); // HTTP URL → nombre de pages
 
   // Build inbound link map for orphan/weak link detection
   const inboundMap = new Map<string, Set<string>>();
@@ -107,11 +106,7 @@ function checkBrokenLinks(pages: PageData[], baseUrl: string): CategoryResult {
           }
           // Detect internal HTTP links on an HTTPS site
           if (resolved.protocol === "http:" && base.protocol === "https:") {
-            const key = `${page.url}||${href}`;
-            if (!seenHttpLinks.has(key)) {
-              seenHttpLinks.add(key);
-              httpLinks.push({ page: page.url, element: `<a>${text || href}</a>`, detail: `Lien interne en HTTP`, resourceUrl: href });
-            }
+            httpLinksMap.set(href, (httpLinksMap.get(href) || 0) + 1);
           }
         } else {
           hasExternalLink = true;
@@ -141,6 +136,13 @@ function checkBrokenLinks(pages: PageData[], baseUrl: string): CategoryResult {
       weakLinkedPages.push({ page: url, detail: "Une seule page pointe vers cette page" });
     }
   }
+
+  const httpLinks: CheckItem[] = Array.from(httpLinksMap.entries()).map(([href, count]) => ({
+    page: href,
+    element: href,
+    detail: `Lien en HTTP sur ${count} page${count > 1 ? "s" : ""}`,
+    resourceUrl: href,
+  }));
 
   const checks = [
     make("broken-links", "links", "Liens cassés (404)", broken),
