@@ -49,7 +49,7 @@ function checkBrokenLinks(pages: PageData[], baseUrl: string): CategoryResult {
   const broken: CheckItem[] = [];
   const empty: CheckItem[] = [];
   const noExternalLinks: CheckItem[] = [];
-  const httpLinksMap = new Map<string, number>(); // HTTP URL → nombre de pages
+  const httpLinksMap = new Map<string, { count: number; location: string }>(); // HTTP URL → { count, location }
 
   // Build inbound link map for orphan/weak link detection
   const inboundMap = new Map<string, Set<string>>();
@@ -106,7 +106,11 @@ function checkBrokenLinks(pages: PageData[], baseUrl: string): CategoryResult {
           }
           // Detect internal HTTP links on an HTTPS site
           if (resolved.protocol === "http:" && base.protocol === "https:") {
-            httpLinksMap.set(href, (httpLinksMap.get(href) || 0) + 1);
+            const inFooter = $(el).closest("footer, [id*='footer' i], [class*='footer' i]").length > 0;
+            const inNav = $(el).closest("header, nav, [id*='header' i], [class*='header' i], [id*='menu' i], [class*='menu' i], [id*='nav' i], [class*='nav' i]").length > 0;
+            const location = inFooter ? "Footer" : inNav ? "Menu/Nav" : "Contenu";
+            const existing = httpLinksMap.get(href);
+            httpLinksMap.set(href, { count: (existing?.count || 0) + 1, location: existing?.location || location });
           }
         } else {
           hasExternalLink = true;
@@ -137,10 +141,10 @@ function checkBrokenLinks(pages: PageData[], baseUrl: string): CategoryResult {
     }
   }
 
-  const httpLinks: CheckItem[] = Array.from(httpLinksMap.entries()).map(([href, count]) => ({
+  const httpLinks: CheckItem[] = Array.from(httpLinksMap.entries()).map(([href, { count, location }]) => ({
     page: href,
     element: href,
-    detail: `Lien en HTTP sur ${count} page${count > 1 ? "s" : ""}`,
+    detail: `${location} — présent sur ${count} page${count > 1 ? "s" : ""}`,
     resourceUrl: href,
   }));
 
