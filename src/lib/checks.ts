@@ -24,7 +24,6 @@ export async function runAllChecks(pages: PageData[], baseUrl: string): Promise<
   categories.push(checkImages(deduped));
   categories.push(checkSeo(deduped, baseUrl));
   categories.push(checkTechnical(deduped, baseUrl));
-  categories.push(checkPerformance(deduped));
   categories.push(await checkRequiredPages(deduped, baseUrl));
   categories.push(await checkWordPress(deduped, baseUrl));
 
