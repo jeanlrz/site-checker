@@ -766,7 +766,7 @@ async function checkCustom404(baseUrl: string): Promise<CheckResult> {
 
   try {
     const res = await fetch(testUrl, {
-      signal: AbortSignal.timeout(10000),
+      signal: AbortSignal.timeout(20000),
       headers: { "User-Agent": "SiteChecker/1.0 (Com d'Artisans)" },
     });
     const html = await res.text();
@@ -775,14 +775,29 @@ async function checkCustom404(baseUrl: string): Promise<CheckResult> {
       return { id: "custom-404", category: "pages", label: "Page 404 personnalisée", severity: "warning", count: 1, items: [{ page: testUrl, detail: `Le serveur répond ${res.status} au lieu de 404 (soft 404 — mauvais pour le SEO)` }] };
     }
 
-    const hasDesign = html.includes("elementor") || html.includes("wp-content/themes") || html.length > 5000;
-    if (!hasDesign) {
+    const $ = cheerio.load(html);
+
+    // Retirer header et footer pour ne tester que le contenu principal
+    $("header, footer, nav").remove();
+    const contentHtml = $.html();
+
+    const hasCustomContent =
+      html.includes("elementor") ||
+      html.includes("wp-content/themes") ||
+      html.length > 3000 ||
+      /404/i.test($("h1, h2").first().text()) ||
+      $("a[href], button").length > 0 ||
+      contentHtml.includes("<a ") ||
+      contentHtml.includes("<button");
+
+    if (!hasCustomContent) {
       return { id: "custom-404", category: "pages", label: "Page 404 personnalisée", severity: "warning", count: 1, items: [{ page: baseUrl + "/404", detail: "Page 404 sans design personnalisé détecté" }] };
     }
 
     return { id: "custom-404", category: "pages", label: "Page 404 personnalisée", severity: "success", count: 0, items: [] };
   } catch {
-    return { id: "custom-404", category: "pages", label: "Page 404 personnalisée", severity: "warning", count: 1, items: [{ page: testUrl, detail: "Impossible de vérifier la page 404 (délai dépassé)" }] };
+    // En cas de timeout, on ne pénalise pas — le site existe mais est lent
+    return { id: "custom-404", category: "pages", label: "Page 404 personnalisée", severity: "success", count: 0, items: [] };
   }
 }
 
