@@ -382,7 +382,10 @@ export default function Home() {
             if (event.type === "progress") {
               setProgress({ phase: event.phase, pagesScanned: event.pagesScanned, totalPages: event.totalPages, currentUrl: event.currentUrl });
               if (event.resolvedUrl) setScanUrl(event.resolvedUrl.replace(/^https?:\/\//, "").replace(/\/$/, ""));
-              if (event.currentUrl) setScannedPages(prev => prev.includes(event.currentUrl) ? prev : [...prev, event.currentUrl]);
+              if (event.currentUrl) {
+                const normUrl = event.currentUrl.replace(/\/$/, "") || event.currentUrl;
+                setScannedPages(prev => prev.some(p => p.replace(/\/$/, "") === normUrl) ? prev : [...prev, normUrl]);
+              }
             } else if (event.type === "done") {
               setResults(event.categories);
               setScanInfo({ totalPages: event.totalPages, duration: event.duration });
