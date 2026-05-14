@@ -596,13 +596,13 @@ export default function Home() {
 
             <div className="w-full max-w-[85vw] grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 text-sm text-muted-foreground mt-4">
               {[
+                { icon: <Globe className="w-5 h-5" />, label: "Sécurité", bullets: ["URL de connexion sécurisée (wp-login.php masqué)", "En-têtes de sécurité configurés (.htaccess)"] },
+                { icon: <Search className="w-5 h-5" />, label: "SEO", bullets: ["Pages sans balise <title>", "Pages sans meta description", "Pages sans H1 ou avec plusieurs H1", "Titres identiques sur plusieurs pages", "Titles ou meta descriptions trop longs", "Fil d'ariane absent", "Image de mise en avant (og:image) manquante"] },
                 { icon: <Link className="w-5 h-5" />, label: "Liens", bullets: ["Liens internes cassés (404)", "Boutons sans lien (href=\"#\")", "Liens internes en HTTP (non sécurisé)", "Pages orphelines (aucun lien entrant)", "Pages peu liées (1 seul lien entrant)", "Pages sans lien externe"] },
                 { icon: <Image className="w-5 h-5" />, label: "Images", bullets: ["Images sans texte alternatif (alt)", "Images non converties en WebP"] },
-                { icon: <Search className="w-5 h-5" />, label: "SEO", bullets: ["Pages sans balise <title>", "Pages sans meta description", "Pages sans H1 ou avec plusieurs H1", "Titres identiques sur plusieurs pages", "Titles ou meta descriptions trop longs", "Fil d'ariane absent", "Image de mise en avant (og:image) manquante"] },
                 { icon: <Settings className="w-5 h-5" />, label: "Technique", bullets: ["Favicon présent", "Meta viewport (responsive)", "Sitemap.xml accessible", "Robots.txt accessible", "Google Analytics / Tag Manager détecté", "Contenu mixte (ressources HTTP sur HTTPS)", "Lorem ipsum détecté"] },
-                { icon: <Zap className="w-5 h-5" />, label: "Performance", bullets: ["Pages trop lentes (>5s de chargement)"] },
                 { icon: <FileText className="w-5 h-5" />, label: "Pages", bullets: ["Mentions légales", "Politique de confidentialité", "Politique de cookies", "Plan du site", "Page 404 personnalisée"] },
-                { icon: <Globe className="w-5 h-5" />, label: "Sécurité", bullets: ["URL de connexion sécurisée (wp-login.php masqué)", "En-têtes de sécurité configurés (.htaccess)"] },
+                { icon: <Zap className="w-5 h-5" />, label: "Performance", bullets: ["Pages trop lentes (>5s de chargement)"] },
               ].map((item) => (
                 <div key={item.label} className="flex items-start gap-3 p-4 rounded-xl bg-white border border-border">
                   <div className="text-brand mt-0.5 shrink-0">{item.icon}</div>
