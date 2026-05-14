@@ -690,6 +690,7 @@ export default function Home() {
                 <a
                   key={cat.id}
                   href={`#cat-${cat.id}`}
+                  onClick={(e) => { e.preventDefault(); document.getElementById(`cat-${cat.id}`)?.scrollIntoView({ behavior: "smooth", block: "start" }); }}
                   className={`flex items-center gap-2 p-3 rounded-xl border transition-all hover:shadow-md ${severityColor(cat.severity)}`}
                 >
                   <span className="shrink-0">{severityIcon(cat.severity)}</span>
