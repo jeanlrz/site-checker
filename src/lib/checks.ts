@@ -49,6 +49,8 @@ function checkBrokenLinks(pages: PageData[], baseUrl: string): CategoryResult {
   const broken: CheckItem[] = [];
   const empty: CheckItem[] = [];
   const noExternalLinks: CheckItem[] = [];
+  const httpLinks: CheckItem[] = [];
+  const seenHttpLinks = new Set<string>();
 
   // Build inbound link map for orphan/weak link detection
   const inboundMap = new Map<string, Set<string>>();
@@ -103,6 +105,14 @@ function checkBrokenLinks(pages: PageData[], baseUrl: string): CategoryResult {
           if (normalizeForCheck(page.url) !== norm && inboundMap.has(norm)) {
             inboundMap.get(norm)!.add(page.url);
           }
+          // Detect internal HTTP links on an HTTPS site
+          if (resolved.protocol === "http:" && base.protocol === "https:") {
+            const key = `${page.url}||${href}`;
+            if (!seenHttpLinks.has(key)) {
+              seenHttpLinks.add(key);
+              httpLinks.push({ page: page.url, element: `<a>${text || href}</a>`, detail: `Lien interne en HTTP`, resourceUrl: href });
+            }
+          }
         } else {
           hasExternalLink = true;
         }
@@ -134,6 +144,7 @@ function checkBrokenLinks(pages: PageData[], baseUrl: string): CategoryResult {
   const checks = [
     make("broken-links", "links", "Liens cassés (404)", broken),
     make("empty-links", "links", "Boutons sans lien (href=\"#\")", empty),
+    make("http-links", "links", "Liens internes en HTTP (non sécurisé)", httpLinks),
     make("orphan-pages", "links", "Pages orphelines (aucun lien entrant)", orphanPages),
     make("weak-internal-links", "links", "Pages peu liées (1 seul lien entrant)", weakLinkedPages),
     make("no-external-links", "links", "Pages sans lien externe", noExternalLinks),
