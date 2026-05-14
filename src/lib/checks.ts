@@ -202,6 +202,42 @@ function isHtmlPage(page: PageData): boolean {
   return true;
 }
 
+// Pages légales/utilitaires qui n'ont pas besoin de meta description SEO
+function isLegalOrUtilityPage(url: string, html?: string): boolean {
+  const urlLower = url.toLowerCase();
+
+  const slugs = [
+    // Mentions légales
+    "mentions-legales", "mentions_legales", "mentions-legal", "legal-notice", "legales",
+    // Confidentialité
+    "politique-de-confidentialite", "politique-confidentialite", "confidentialite",
+    "privacy-policy", "privacy", "rgpd", "donnees-personnelles",
+    // Cookies
+    "politique-de-cookies", "politique-cookies", "cookie-policy", "gestion-des-cookies", "cookies",
+    // Plan du site
+    "plan-du-site", "plan_du_site", "sitemap-page", "sitemap-html", "plan-site",
+    "site-map", "navigation", "/nav/", "plan-liens", "plan-lien",
+  ];
+  if (slugs.some((s) => urlLower.includes(s))) return true;
+
+  // Détection par titre / H1 (identique à checkRequiredPages)
+  if (html) {
+    const $ = cheerio.load(html);
+    const title = $("title").first().text().toLowerCase();
+    const h1 = $("h1").first().text().toLowerCase();
+    const titleKeywords = [
+      "mentions légales", "mentions legales",
+      "politique de confidentialité", "confidentialité",
+      "données personnelles",
+      "politique de cookies", "gestion des cookies",
+      "plan du site",
+    ];
+    if (titleKeywords.some((k) => title.includes(k) || h1.includes(k))) return true;
+  }
+
+  return false;
+}
+
 // ─── 3. SEO ─────────────────────────────────────────────────────
 function checkSeo(pages: PageData[], baseUrl: string): CategoryResult {
   const missingTitle: CheckItem[] = [];
@@ -243,8 +279,11 @@ function checkSeo(pages: PageData[], baseUrl: string): CategoryResult {
     }
 
     const desc = $('meta[name="description"]').attr("content")?.trim();
+    const isSecondaryPage = isLegalOrUtilityPage(page.url, page.html);
     if (!desc) {
-      missingDesc.push({ page: page.url, detail: "Meta description manquante" });
+      if (!isSecondaryPage) {
+        missingDesc.push({ page: page.url, detail: "Meta description manquante" });
+      }
     } else if (desc.length > 156) {
       longDesc.push({ page: page.url, detail: `${desc.length} caractères` });
     }
