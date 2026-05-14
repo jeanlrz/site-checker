@@ -94,6 +94,7 @@ const CHECK_WEIGHTS: Record<string, number> = {
   "orphan-pages": 9,
   "no-external-links": 5,
   "weak-internal-links": 4,
+  "http-links": 7,
   // Images
   "broken-images": 8,
   "no-alt": 5,
@@ -107,12 +108,11 @@ const CHECK_WEIGHTS: Record<string, number> = {
   "sitemap": 6,
   "favicon": 5,
   "robots": 5,
-  // Performance
-  "slow-pages": 6,
   // SEO — nouveaux
   "heading-hierarchy": 5,
   "missing-featured-image": 4,
-  // WordPress
+  // Sécurité
+  "security-headers": 7,
   "breadcrumb": 4,
   "login-url": 3,
   "custom-404": 4,
