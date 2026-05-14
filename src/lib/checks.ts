@@ -424,16 +424,18 @@ function checkTechnical(pages: PageData[], baseUrl: string): CategoryResult {
   // Mixed content (HTTP resources on HTTPS page)
   if (baseUrl.startsWith("https://")) {
     const mixedContent: CheckItem[] = [];
-    const seenMixed = new Set<string>();
+    const seenPerPage = new Set<string>();
     for (const page of pages) {
       if (!page.html || !isHtmlPage(page)) continue;
       const $ = cheerio.load(page.html);
       $("img[src], script[src], link[href], iframe[src], source[src]").each((_, el) => {
-        const url = $(el).attr("src") || $(el).attr("href") || "";
-        if (url.startsWith("http://") && !seenMixed.has(url)) {
-          seenMixed.add(url);
-          mixedContent.push({ page: page.url, detail: `Ressource HTTP : ${url.slice(0, 100)}` });
-        }
+        const resourceUrl = $(el).attr("src") || $(el).attr("href") || "";
+        if (!resourceUrl.startsWith("http://")) return;
+        const key = `${page.url}||${resourceUrl}`;
+        if (seenPerPage.has(key)) return;
+        seenPerPage.add(key);
+        const filename = resourceUrl.split("/").pop()?.split("?")[0] || resourceUrl;
+        mixedContent.push({ page: page.url, detail: `Ressource HTTP : ${filename}`, resourceUrl });
       });
     }
     checks.push(make("mixed-content", "technical", "Contenu mixte (HTTP sur HTTPS)", mixedContent));
