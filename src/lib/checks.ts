@@ -453,8 +453,7 @@ function checkTechnical(pages: PageData[], baseUrl: string): CategoryResult {
         const key = `${page.url}||${resourceUrl}`;
         if (seenPerPage.has(key)) return;
         seenPerPage.add(key);
-        const filename = resourceUrl.split("/").pop()?.split("?")[0] || resourceUrl;
-        mixedContent.push({ page: page.url, detail: `Ressource HTTP : ${filename}`, resourceUrl });
+        mixedContent.push({ page: page.url, element: resourceUrl, detail: "Ressource HTTP", resourceUrl });
       });
     }
     checks.push(make("mixed-content", "technical", "Contenu mixte (HTTP sur HTTPS)", mixedContent));
