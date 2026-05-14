@@ -108,7 +108,7 @@ function checkBrokenLinks(pages: PageData[], baseUrl: string): CategoryResult {
           if (resolved.protocol === "http:" && base.protocol === "https:") {
             const inFooter = $(el).closest("footer, [id*='footer' i], [class*='footer' i]").length > 0;
             const inNav = $(el).closest("header, nav, [id*='header' i], [class*='header' i], [id*='menu' i], [class*='menu' i], [id*='nav' i], [class*='nav' i]").length > 0;
-            const location = inFooter ? "Footer" : inNav ? "Menu/Nav" : "Contenu";
+            const location = inFooter ? "Footer" : inNav ? "Header" : "Contenu";
             const existing = httpLinksMap.get(href);
             httpLinksMap.set(href, { count: (existing?.count || 0) + 1, location: existing?.location || location });
           }
@@ -461,7 +461,7 @@ function checkTechnical(pages: PageData[], baseUrl: string): CategoryResult {
         seenThisPage.add(key);
         const inFooter = $(el).closest("footer, [id*='footer' i], [class*='footer' i]").length > 0;
         const inNav = $(el).closest("header, nav, [id*='header' i], [class*='header' i], [id*='menu' i], [class*='menu' i], [id*='nav' i], [class*='nav' i]").length > 0;
-        const location = inFooter ? "Footer" : inNav ? "Menu/Nav" : "Contenu";
+        const location = inFooter ? "Footer" : inNav ? "Header" : "Contenu";
         const existing = mixedMap.get(resourceUrl);
         mixedMap.set(resourceUrl, { count: (existing?.count || 0) + 1, location: existing?.location || location });
       });
