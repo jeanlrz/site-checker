@@ -310,7 +310,7 @@ function checkSeo(pages: PageData[], baseUrl: string): CategoryResult {
     }
 
     // Featured image: og:image should be present on indexable pages
-    if (!isNoIndex) {
+    if (!isNoIndex && !isLegalOrUtilityPage(page.url, page.html)) {
       const ogImage = $('meta[property="og:image"]').attr("content");
       if (!ogImage) {
         missingFeaturedImage.push({ page: page.url, detail: "Image de mise en avant absente (og:image manquant)" });
