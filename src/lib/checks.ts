@@ -448,20 +448,30 @@ function checkTechnical(pages: PageData[], baseUrl: string): CategoryResult {
 
   // Mixed content (HTTP resources on HTTPS page)
   if (baseUrl.startsWith("https://")) {
-    const mixedContent: CheckItem[] = [];
-    const seenPerPage = new Set<string>();
+    const mixedMap = new Map<string, { count: number; location: string }>();
     for (const page of pages) {
       if (!page.html || !isHtmlPage(page)) continue;
       const $ = cheerio.load(page.html);
+      const seenThisPage = new Set<string>();
       $("img[src], script[src], link[href], iframe[src], source[src]").each((_, el) => {
         const resourceUrl = $(el).attr("src") || $(el).attr("href") || "";
         if (!resourceUrl.startsWith("http://")) return;
         const key = `${page.url}||${resourceUrl}`;
-        if (seenPerPage.has(key)) return;
-        seenPerPage.add(key);
-        mixedContent.push({ page: page.url, element: resourceUrl, detail: "Ressource HTTP", resourceUrl });
+        if (seenThisPage.has(key)) return;
+        seenThisPage.add(key);
+        const inFooter = $(el).closest("footer, [id*='footer' i], [class*='footer' i]").length > 0;
+        const inNav = $(el).closest("header, nav, [id*='header' i], [class*='header' i], [id*='menu' i], [class*='menu' i], [id*='nav' i], [class*='nav' i]").length > 0;
+        const location = inFooter ? "Footer" : inNav ? "Menu/Nav" : "Contenu";
+        const existing = mixedMap.get(resourceUrl);
+        mixedMap.set(resourceUrl, { count: (existing?.count || 0) + 1, location: existing?.location || location });
       });
     }
+    const mixedContent: CheckItem[] = Array.from(mixedMap.entries()).map(([resourceUrl, { count, location }]) => ({
+      page: resourceUrl,
+      element: resourceUrl,
+      detail: `${location} — présent sur ${count} page${count > 1 ? "s" : ""}`,
+      resourceUrl,
+    }));
     checks.push(make("mixed-content", "technical", "Contenu mixte (HTTP sur HTTPS)", mixedContent));
   }
 
