@@ -649,6 +649,7 @@ async function checkWordPress(pages: PageData[], baseUrl: string): Promise<Categ
 function checkBreadcrumbPresence(pages: PageData[], baseUrl: string): CheckResult {
   const innerPages = pages.filter((p) => {
     if (!p.html || !isHtmlPage(p) || p.status >= 400) return false;
+    if (isLegalOrUtilityPage(p.url, p.html)) return false;
     try { return new URL(p.url).pathname !== "/"; } catch { return false; }
   });
 
@@ -686,11 +687,11 @@ function checkBreadcrumbPresence(pages: PageData[], baseUrl: string): CheckResul
   const withBreadcrumb = innerPages.filter(hasBreadcrumb);
 
   if (withBreadcrumb.length === 0) {
-    const allItems = innerPages.slice(0, 50).map((p) => ({ page: p.url, detail: "Fil d'ariane absent" }));
+    const allItems = innerPages.map((p) => ({ page: p.url, detail: "Fil d'ariane absent" }));
     return { id: "breadcrumb", category: "seo", label: "Fil d'ariane", severity: "warning", count: allItems.length, items: allItems };
   }
 
-  const missing = innerPages.filter((p) => !withBreadcrumb.includes(p)).slice(0, 20).map((p) => ({ page: p.url, detail: "Fil d'ariane absent" }));
+  const missing = innerPages.filter((p) => !withBreadcrumb.includes(p)).map((p) => ({ page: p.url, detail: "Fil d'ariane absent" }));
   return make("breadcrumb", "seo", "Fil d'ariane", missing);
 }
 
