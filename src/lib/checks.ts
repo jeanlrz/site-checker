@@ -134,6 +134,7 @@ function checkBrokenLinks(pages: PageData[], baseUrl: string): CategoryResult {
   const orphanPages: CheckItem[] = [];
   const weakLinkedPages: CheckItem[] = [];
   for (const [url, sources] of inboundMap) {
+    if (isLegalOrUtilityPage(url)) continue;
     if (sources.size === 0) {
       orphanPages.push({ page: url, detail: "Aucune page ne pointe vers cette page" });
     } else if (sources.size === 1) {
