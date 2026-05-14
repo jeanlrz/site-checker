@@ -722,6 +722,8 @@ async function checkCustom404(baseUrl: string): Promise<CheckResult> {
 
 function normalizeForCheck(url: string): string {
   const u = new URL(url);
+  u.protocol = "https:";
+  u.hostname = u.hostname.replace(/^www\./, "");
   u.hash = "";
   u.search = "";
   let path = u.pathname;
