@@ -651,15 +651,45 @@ async function checkRequiredPages(pages: PageData[], baseUrl: string): Promise<C
   return { id: "pages", label: "Pages", icon: "FileText", severity: worstSeverity(checks), checks };
 }
 
-// ─── 9. WORDPRESS ───────────────────────────────────────────────
+// ─── 9. SÉCURITÉ ────────────────────────────────────────────────
 async function checkWordPress(pages: PageData[], baseUrl: string): Promise<CategoryResult> {
   const loginResult = await checkLoginUrl(baseUrl);
+  const headersResult = checkSecurityHeaders(pages, baseUrl);
 
   const checks: CheckResult[] = [
     loginResult,
+    headersResult,
   ];
 
-  return { id: "wordpress", label: "WordPress", icon: "Globe", severity: worstSeverity(checks), checks };
+  return { id: "wordpress", label: "Sécurité", icon: "Globe", severity: worstSeverity(checks), checks };
+}
+
+function checkSecurityHeaders(pages: PageData[], baseUrl: string): CheckResult {
+  const homepage = pages.find((p) => (p.url === baseUrl || p.url === baseUrl + "/") && p.headers);
+  if (!homepage) {
+    return { id: "security-headers", category: "wordpress", label: "En-têtes de sécurité (.htaccess)", severity: "warning", count: 1, items: [{ page: baseUrl, detail: "Impossible de vérifier les en-têtes (page d'accueil non trouvée)" }] };
+  }
+
+  const securityHeaders = [
+    "strict-transport-security",
+    "x-frame-options",
+    "x-content-type-options",
+    "referrer-policy",
+    "content-security-policy",
+    "permissions-policy",
+  ];
+
+  const present = securityHeaders.filter((h) => homepage.headers[h]);
+  const isConfigured = present.length >= 2;
+
+  return {
+    id: "security-headers",
+    category: "wordpress",
+    label: "En-têtes de sécurité (.htaccess)",
+    severity: isConfigured ? "success" : "error",
+    count: isConfigured ? 0 : 1,
+    items: isConfigured ? [] : [{ page: baseUrl, detail: "Aucun en-tête de sécurité détecté — à configurer dans le .htaccess" }],
+  };
 }
 
 function checkBreadcrumbPresence(pages: PageData[], baseUrl: string): CheckResult {
