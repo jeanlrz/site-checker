@@ -134,7 +134,7 @@ function checkBrokenLinks(pages: PageData[], baseUrl: string): CategoryResult {
   const orphanPages: CheckItem[] = [];
   const weakLinkedPages: CheckItem[] = [];
   for (const [url, sources] of inboundMap) {
-    if (isLegalOrUtilityPage(url)) continue;
+    if (isSitemapPage(url)) continue;
     if (sources.size === 0) {
       orphanPages.push({ page: url, detail: "Aucune page ne pointe vers cette page" });
     } else if (sources.size === 1) {
@@ -212,6 +212,13 @@ function isHtmlPage(page: PageData): boolean {
   const ct = page.headers["content-type"] || "";
   if (ct && !ct.includes("text/html")) return false;
   return true;
+}
+
+// Page plan du site (pas besoin de lien entrant, rarement liée dans le site)
+function isSitemapPage(url: string): boolean {
+  const slugs = ["plan-du-site", "plan_du_site", "sitemap-page", "sitemap-html", "plan-site", "site-map", "/nav/", "nav-link", "plan-liens", "plan-lien"];
+  const urlLower = url.toLowerCase();
+  return slugs.some((s) => urlLower.includes(s));
 }
 
 // Pages légales/utilitaires qui n'ont pas besoin de meta description SEO
