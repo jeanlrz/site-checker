@@ -781,14 +781,17 @@ async function checkCustom404(baseUrl: string): Promise<CheckResult> {
     $("header, footer, nav").remove();
     const contentHtml = $.html();
 
-    const hasCustomContent =
-      html.includes("elementor") ||
-      html.includes("wp-content/themes") ||
-      html.length > 3000 ||
-      /404/i.test($("h1, h2").first().text()) ||
-      $("a[href], button").length > 0 ||
-      contentHtml.includes("<a ") ||
-      contentHtml.includes("<button");
+    // Elementor a CONSTRUIT la page (pas juste installé)
+    const builtWithElementor =
+      html.includes('data-elementor-type') ||
+      html.includes('class="elementor-section') ||
+      html.includes("class='elementor-section");
+
+    // Contenu substantiel hors header/footer (> 800 chars = vraie 404 custom)
+    const bodyText = $("main, #main, .main, #content, .content, [class*='content'], body").first().text().trim();
+    const richContent = bodyText.length > 200 && !/^il semble que rien/i.test(bodyText) && !/^nothing found/i.test(bodyText);
+
+    const hasCustomContent = builtWithElementor || richContent;
 
     if (!hasCustomContent) {
       return { id: "custom-404", category: "pages", label: "Page 404 personnalisée", severity: "warning", count: 1, items: [{ page: baseUrl + "/404", detail: "Page 404 sans design personnalisé détecté" }] };
