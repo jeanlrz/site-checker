@@ -603,7 +603,8 @@ async function checkRequiredPages(pages: PageData[], baseUrl: string): Promise<C
   const checks: CheckResult[] = [];
 
   for (const req of requiredPages) {
-    const found = pages.find((p) => {
+    // 1) Chercher dans les pages crawlées
+    let found = pages.find((p) => {
       if (!isHtmlPage(p) || p.status >= 400) return false;
       const urlLower = p.url.toLowerCase();
       if (req.slugs.some((s) => urlLower.includes(s))) return true;
@@ -626,6 +627,22 @@ async function checkRequiredPages(pages: PageData[], baseUrl: string): Promise<C
       }
       return false;
     });
+
+    // 2) Fallback : tenter de fetch les slugs directement (page non liée = non crawlée)
+    if (!found) {
+      for (const slug of req.slugs) {
+        try {
+          const testUrl = baseUrl.replace(/\/$/, "") + "/" + slug;
+          const res = await fetch(testUrl, {
+            method: "HEAD",
+            redirect: "follow",
+            signal: AbortSignal.timeout(8000),
+            headers: { "User-Agent": "SiteChecker/1.0 (Com d'Artisans)" },
+          });
+          if (res.status === 200) { found = { url: testUrl } as PageData; break; }
+        } catch { /* timeout / réseau */ }
+      }
+    }
 
     const notFoundSeverity: "error" | "warning" = req.id === "plan-du-site" ? "warning" : "error";
 
