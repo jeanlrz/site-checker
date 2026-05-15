@@ -781,15 +781,24 @@ async function checkCustom404(baseUrl: string): Promise<CheckResult> {
     $("header, footer, nav").remove();
     const contentHtml = $.html();
 
-    // Elementor a CONSTRUIT la page (pas juste installé)
-    const builtWithElementor =
-      html.includes('data-elementor-type') ||
-      html.includes('class="elementor-section') ||
-      html.includes("class='elementor-section");
+    // Elementor a construit une page 404 dédiée
+    const builtWithElementor = html.includes('data-elementor-type="error-404"');
 
-    // Contenu substantiel hors header/footer (> 800 chars = vraie 404 custom)
-    const bodyText = $("main, #main, .main, #content, .content, [class*='content'], body").first().text().trim();
-    const richContent = bodyText.length > 200 && !/^il semble que rien/i.test(bodyText) && !/^nothing found/i.test(bodyText);
+    // Contenu de la zone principale uniquement (pas header/footer)
+    $("header, footer, nav, #wpadminbar, .elementor-location-header, .elementor-location-footer").remove();
+    const mainEl = $("main, #main, #primary, .site-main, .main-content").first();
+    const mainText = (mainEl.length ? mainEl : $("body")).text().replace(/\s+/g, " ").trim();
+
+    // Exclure les messages par défaut WordPress/thème
+    const defaultMessages = [
+      "il semble que rien",
+      "nothing found",
+      "it seems we can",
+      "the page you",
+    ];
+    const isDefaultMessage = defaultMessages.some(m => mainText.toLowerCase().includes(m));
+    // Contenu custom = texte substantiel (> 300 chars) et pas le message par défaut
+    const richContent = !isDefaultMessage && mainText.length > 300;
 
     const hasCustomContent = builtWithElementor || richContent;
 
