@@ -596,12 +596,12 @@ export default function Home() {
 
             <div className="w-full max-w-[85vw] grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 text-sm text-muted-foreground mt-4">
               {[
-                { icon: <Globe className="w-5 h-5" />, label: "Sécurité", bullets: ["En-têtes de sécurité configurés (.htaccess)", "URL de connexion sécurisée"] },
-                { icon: <Search className="w-5 h-5" />, label: "SEO", bullets: ["Fil d'ariane absent", "Hiérarchie des titres incorrecte", "Image de mise en avant manquante", "Meta description trop longue", "Pages sans H1 ou avec plusieurs H1", "Pages sans balise <title>", "Pages sans meta description", "Titre trop long", "Titres identiques sur plusieurs pages"] },
-                { icon: <Link className="w-5 h-5" />, label: "Liens", bullets: ["Boutons sans lien (href=\"#\")", "Liens internes cassés (404)", "Liens internes en HTTP (non sécurisé)", "Pages orphelines (aucun lien entrant)", "Pages peu liées (1 seul lien entrant)", "Pages sans lien externe"] },
                 { icon: <Image className="w-5 h-5" />, label: "Images", bullets: ["Images non converties en WebP", "Images sans texte alternatif (alt)"] },
-                { icon: <Settings className="w-5 h-5" />, label: "Technique", bullets: ["Analytics / Google Tag Manager absent", "Contenu mixte (ressources HTTP sur HTTPS)", "Favicon absent", "Lorem ipsum détecté", "Meta viewport absente (responsive)", "Robots.txt absent", "Sitemap.xml absent"] },
+                { icon: <Link className="w-5 h-5" />, label: "Liens", bullets: ["Boutons sans lien (href=\"#\")", "Liens internes cassés (404)", "Liens internes en HTTP (non sécurisé)", "Pages orphelines (aucun lien entrant)", "Pages peu liées (1 seul lien entrant)", "Pages sans lien externe"] },
                 { icon: <FileText className="w-5 h-5" />, label: "Pages", bullets: ["Mentions légales", "Page 404 personnalisée", "Plan du site", "Politique de confidentialité", "Politique de cookies"] },
+                { icon: <Search className="w-5 h-5" />, label: "SEO", bullets: ["Fil d'ariane absent", "Hiérarchie des titres incorrecte", "Image de mise en avant manquante", "Meta description trop longue", "Pages sans H1 ou avec plusieurs H1", "Pages sans balise <title>", "Pages sans meta description", "Titre trop long", "Titres identiques sur plusieurs pages"] },
+                { icon: <Globe className="w-5 h-5" />, label: "Sécurité", bullets: ["En-têtes de sécurité configurés (.htaccess)", "URL de connexion sécurisée"] },
+                { icon: <Settings className="w-5 h-5" />, label: "Technique", bullets: ["Analytics / Google Tag Manager absent", "Contenu mixte (ressources HTTP sur HTTPS)", "Favicon absent", "Lorem ipsum détecté", "Meta viewport absente (responsive)", "Robots.txt absent", "Sitemap.xml absent"] },
               ].map((item) => (
                 <div key={item.label} className="flex items-start gap-3 p-4 rounded-xl bg-white border border-border">
                   <div className="text-brand mt-0.5 shrink-0">{item.icon}</div>
@@ -687,7 +687,11 @@ export default function Home() {
 
             {/* Résumé catégories */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-              {results.map((cat) => (
+              {[...results].sort((a, b) => {
+                const o: Record<string, number> = { error: 0, warning: 1, success: 2 };
+                if (o[a.severity] !== o[b.severity]) return o[a.severity] - o[b.severity];
+                return b.checks.filter(c => c.severity !== "success").length - a.checks.filter(c => c.severity !== "success").length;
+              }).map((cat) => (
                 <a
                   key={cat.id}
                   href={`#cat-${cat.id}`}
@@ -706,7 +710,11 @@ export default function Home() {
             </div>
 
             {/* Détail par catégorie */}
-            {results.map((cat) => (
+            {[...results].sort((a, b) => {
+              const o: Record<string, number> = { error: 0, warning: 1, success: 2 };
+              if (o[a.severity] !== o[b.severity]) return o[a.severity] - o[b.severity];
+              return b.checks.filter(c => c.severity !== "success").length - a.checks.filter(c => c.severity !== "success").length;
+            }).map((cat) => (
               <Card key={cat.id} id={`cat-${cat.id}`} className="scroll-mt-24">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
