@@ -712,7 +712,13 @@ function checkBreadcrumbPresence(pages: PageData[], baseUrl: string): CheckResul
   const innerPages = pages.filter((p) => {
     if (!p.html || !isHtmlPage(p) || p.status >= 400) return false;
     if (isLegalOrUtilityPage(p.url, p.html)) return false;
-    try { return new URL(p.url).pathname !== "/"; } catch { return false; }
+    try {
+      const path = new URL(p.url).pathname;
+      if (path === "/") return false;
+      // Exclure les homepages de langue (/en, /fr, /es, /de…)
+      if (/^\/[a-z]{2}\/?$/.test(path)) return false;
+      return true;
+    } catch { return false; }
   });
 
   if (innerPages.length === 0) {
