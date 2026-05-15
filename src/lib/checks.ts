@@ -221,7 +221,7 @@ function isHtmlPage(page: PageData): boolean {
 
 // Page plan du site (pas besoin de lien entrant, rarement liée dans le site)
 function isSitemapPage(url: string): boolean {
-  const slugs = ["plan-du-site", "plan_du_site", "sitemap-page", "sitemap-html", "plan-site", "site-map", "/nav/", "nav-link", "plan-liens", "plan-lien"];
+  const slugs = ["plan-du-site", "plan_du_site", "sitemap-page", "sitemap-html", "plan-site", "site-map", "site-map-nav", "/nav/", "nav-link", "plan-liens", "plan-lien"];
   const urlLower = url.toLowerCase();
   return slugs.some((s) => urlLower.includes(s));
 }
@@ -240,7 +240,7 @@ function isLegalOrUtilityPage(url: string, html?: string): boolean {
     "politique-de-cookies", "politique-cookies", "cookie-policy", "gestion-des-cookies", "cookies",
     // Plan du site
     "plan-du-site", "plan_du_site", "sitemap-page", "sitemap-html", "plan-site",
-    "site-map", "navigation", "/nav/", "plan-liens", "plan-lien",
+    "site-map", "site-map-nav", "navigation", "/nav/", "plan-liens", "plan-lien",
   ];
   if (slugs.some((s) => urlLower.includes(s))) return true;
 
@@ -595,7 +595,7 @@ async function checkRequiredPages(pages: PageData[], baseUrl: string): Promise<C
     {
       id: "plan-du-site",
       label: "Plan du site",
-      slugs: ["plan-du-site", "plan-site", "sitemap-page", "plan-du-site-nav", "plan-site-nav", "nav-link"],
+      slugs: ["plan-du-site", "plan-site", "sitemap-page", "plan-du-site-nav", "plan-site-nav", "site-map-nav", "nav-link"],
       titles: ["plan du site", "plan de site"],
     },
   ];
