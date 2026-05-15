@@ -513,12 +513,14 @@ export default function Home() {
               )}
             </div>
           </div>
-          <div className="absolute right-6 flex items-center gap-2">
+          <div className="absolute left-6 flex items-center gap-2">
             <a href="/guide.pdf" target="_blank" rel="noopener noreferrer">
               <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-brand">
                 <FileText className="w-3 h-3 mr-1" />Guide
               </Button>
             </a>
+          </div>
+          <div className="absolute right-6 flex items-center gap-2">
             {results && (<>
               <Button variant="outline" size="sm" disabled={isExportingPdf} onClick={() => { setIsExportingPdf(true); try { exportToPdf(results, scanUrl || url.replace(/^https?:\/\//, "").replace(/\/$/, ""), scanInfo); } finally { setIsExportingPdf(false); } }} className="text-muted-foreground border-border/60 hover:bg-muted/50">
                 <FileText className="w-3 h-3 mr-1" />{isExportingPdf ? "Génération…" : "PDF"}
