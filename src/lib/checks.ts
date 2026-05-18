@@ -430,17 +430,22 @@ function checkTechnical(pages: PageData[], baseUrl: string): CategoryResult {
   }
   checks.push(make("lorem-ipsum", "technical", "Lorem ipsum détecté", loremIpsum));
 
-  // Google Analytics / Tag Manager
+  // Google Analytics / Tag Manager — cherche un vrai ID de tracking, pas juste le mot-clé
+  // (un plugin installé mais non configuré injecte les mots sans ID réel)
   const homepageGA = pages.find((p) => isHtmlPage(p) && p.html);
   if (homepageGA) {
-    const hasGA = homepageGA.html.includes("google-analytics") || homepageGA.html.includes("gtag") || homepageGA.html.includes("googletagmanager") || homepageGA.html.includes("GTM-") || homepageGA.html.includes("UA-") || homepageGA.html.includes("G-");
+    const html = homepageGA.html;
+    const hasGA =
+      /GTM-[A-Z0-9]+/.test(html) ||        // Google Tag Manager
+      /G-[A-Z0-9]{6,}/.test(html) ||        // GA4
+      /UA-\d{5,}-\d+/.test(html);           // Universal Analytics (legacy)
     checks.push({
       id: "no-analytics",
       category: "technical",
       label: "Google Analytics / Google Tag Manager",
       severity: hasGA ? "success" : "warning",
       count: hasGA ? 0 : 1,
-      items: hasGA ? [] : [{ page: homepageGA.url, detail: "Aucun script Analytics ou Google Tag Manager détecté" }],
+      items: hasGA ? [] : [{ page: homepageGA.url, detail: "Aucun ID Analytics ou GTM actif détecté" }],
       tooltip: "Google Tag Manager (GTM) est un outil qui permet d'ajouter des scripts de suivi (Analytics, pixels pub…) sur un site sans toucher au code. Indispensable pour mesurer les visites et les conversions.",
     });
   }
