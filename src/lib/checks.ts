@@ -443,7 +443,7 @@ function checkTechnical(pages: PageData[], baseUrl: string): CategoryResult {
       id: "no-analytics",
       category: "technical",
       label: "Google Analytics / Google Tag Manager",
-      severity: hasGA ? "success" : "warning",
+      severity: hasGA ? "success" : "warning", // warning uniquement — ne pénalise pas le score
       count: hasGA ? 0 : 1,
       items: hasGA ? [] : [{ page: homepageGA.url, detail: "Aucun ID Analytics ou GTM actif détecté" }],
       tooltip: "Google Tag Manager (GTM) est un outil qui permet d'ajouter des scripts de suivi (Analytics, pixels pub…) sur un site sans toucher au code. Indispensable pour mesurer les visites et les conversions.",

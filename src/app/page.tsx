@@ -104,7 +104,7 @@ const CHECK_WEIGHTS: Record<string, number> = {
   "mixed-content": 10,
   "lorem-ipsum": 9,
   "viewport": 8,
-  "no-analytics": 6,
+  "no-analytics": 0,
   "sitemap": 6,
   "favicon": 5,
   "robots": 5,
