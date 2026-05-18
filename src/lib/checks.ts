@@ -221,7 +221,7 @@ function isHtmlPage(page: PageData): boolean {
 
 // Page plan du site (pas besoin de lien entrant, rarement liée dans le site)
 function isSitemapPage(url: string): boolean {
-  const slugs = ["plan-du-site", "plan_du_site", "sitemap-page", "sitemap-html", "plan-site", "site-map", "site-map-nav", "/nav/", "nav-link", "plan-liens", "plan-lien"];
+  const slugs = ["plan-du-site", "plan_du_site", "sitemap-page", "sitemap-html", "plan-site", "plan-de-site", "site-map", "site-map-nav", "/nav/", "nav-link", "plan-liens", "plan-lien"];
   const urlLower = url.toLowerCase();
   return slugs.some((s) => urlLower.includes(s));
 }
@@ -595,7 +595,7 @@ async function checkRequiredPages(pages: PageData[], baseUrl: string): Promise<C
     {
       id: "plan-du-site",
       label: "Plan du site",
-      slugs: ["plan-du-site", "plan-site", "sitemap-page", "plan-du-site-nav", "plan-site-nav", "site-map-nav", "nav-link"],
+      slugs: ["plan-du-site", "plan-site", "plan-de-site", "sitemap-page", "plan-du-site-nav", "plan-site-nav", "site-map-nav", "nav-link"],
       titles: ["plan du site", "plan de site"],
     },
   ];
