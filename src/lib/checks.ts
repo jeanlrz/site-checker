@@ -1,6 +1,15 @@
 import * as cheerio from "cheerio";
 import type { PageData, CategoryResult, CheckResult, CheckItem, Severity } from "./types";
 
+// Page de connexion WordPress (slug renommé via WPS Hide Login ou équivalent)
+// La classe body "login wp-core-ui" est injectée par le core WP — jamais présente sur un intranet custom
+function isWpLoginPage(page: PageData): boolean {
+  if (!page.html) return false;
+  const $ = cheerio.load(page.html);
+  const bodyClass = $("body").attr("class") || "";
+  return bodyClass.includes("login") && bodyClass.includes("wp-core-ui");
+}
+
 export async function runAllChecks(pages: PageData[], baseUrl: string): Promise<CategoryResult[]> {
   // Deduplicate pages — handles www/non-www duplicates ending up in the same array
   const seenUrls = new Set<string>();
@@ -19,13 +28,16 @@ export async function runAllChecks(pages: PageData[], baseUrl: string): Promise<
     } catch { return true; }
   });
 
+  // Exclure les pages de connexion WordPress (slug renommé type /oeo-grp)
+  const filtered = deduped.filter(page => !isWpLoginPage(page));
+
   const categories: CategoryResult[] = [];
-  categories.push(checkBrokenLinks(deduped, baseUrl));
-  categories.push(checkImages(deduped));
-  categories.push(checkSeo(deduped, baseUrl));
-  categories.push(checkTechnical(deduped, baseUrl));
-  categories.push(await checkRequiredPages(deduped, baseUrl));
-  categories.push(await checkWordPress(deduped, baseUrl));
+  categories.push(checkBrokenLinks(filtered, baseUrl));
+  categories.push(checkImages(filtered));
+  categories.push(checkSeo(filtered, baseUrl));
+  categories.push(checkTechnical(filtered, baseUrl));
+  categories.push(await checkRequiredPages(filtered, baseUrl));
+  categories.push(await checkWordPress(filtered, baseUrl));
 
   return categories;
 }
