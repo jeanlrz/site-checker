@@ -10,6 +10,13 @@ function isWpLoginPage(page: PageData): boolean {
   return bodyClass.includes("login") && bodyClass.includes("wp-core-ui");
 }
 
+// Article de blog WordPress — classe "single-post" injectée par le core WP sur tous les articles
+function isWpPost(page: PageData): boolean {
+  if (!page.html) return false;
+  const $ = cheerio.load(page.html);
+  return $("body").attr("class")?.includes("single-post") ?? false;
+}
+
 export async function runAllChecks(pages: PageData[], baseUrl: string): Promise<CategoryResult[]> {
   // Deduplicate pages — handles www/non-www duplicates ending up in the same array
   const seenUrls = new Set<string>();
@@ -28,8 +35,8 @@ export async function runAllChecks(pages: PageData[], baseUrl: string): Promise<
     } catch { return true; }
   });
 
-  // Exclure les pages de connexion WordPress (slug renommé type /oeo-grp)
-  const filtered = deduped.filter(page => !isWpLoginPage(page));
+  // Exclure les pages de connexion WP et les articles de blog
+  const filtered = deduped.filter(page => !isWpLoginPage(page) && !isWpPost(page));
 
   const categories: CategoryResult[] = [];
   categories.push(checkBrokenLinks(filtered, baseUrl));
