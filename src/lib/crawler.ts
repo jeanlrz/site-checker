@@ -57,8 +57,8 @@ export async function crawlSite(
 
       if (!isWpPost) {
         pages.push({ url, html, status: res.status, headers, loadTime, size });
-        onProgress(url, pages.length, pages.length + toVisit.length);
       }
+      onProgress(url, pages.length, pages.length + toVisit.length);
 
       if (res.ok && res.headers.get("content-type")?.includes("text/html") && !isWpPost && !isWpArchive) {
         const $ = cheerio.load(html);
