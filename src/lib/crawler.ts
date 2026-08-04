@@ -48,11 +48,19 @@ export async function crawlSite(
       const headers: Record<string, string> = {};
       res.headers.forEach((v, k) => { headers[k] = v; });
 
-      pages.push({ url, html, status: res.status, headers, loadTime, size });
+      // Détecter les articles WordPress avant de les ajouter aux résultats
+      const bodyClass = (() => { const m = html.match(/<body[^>]*class="([^"]*)"/)  ; return m ? m[1] : ""; })();
+      const isWpPost = bodyClass.includes("single-post");
+      // Pages d'archive (blog, catégories…) : on les garde dans les résultats
+      // mais on n'en extrait pas les liens pour ne pas remplir la queue d'articles
+      const isWpArchive = bodyClass.includes(" blog") || bodyClass.includes(" archive");
 
-      onProgress(url, pages.length, pages.length + toVisit.length);
+      if (!isWpPost) {
+        pages.push({ url, html, status: res.status, headers, loadTime, size });
+        onProgress(url, pages.length, pages.length + toVisit.length);
+      }
 
-      if (res.ok && res.headers.get("content-type")?.includes("text/html")) {
+      if (res.ok && res.headers.get("content-type")?.includes("text/html") && !isWpPost && !isWpArchive) {
         const $ = cheerio.load(html);
         const nonHtmlExt = /\.(png|jpe?g|gif|webp|svg|pdf|zip|mp4|mp3|css|js|ico|woff2?|xml|json|txt)(\?.*)?$/i;
         $("a[href]").each((_, el) => {
